@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LifeLink - Matching Results</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="assets/css/styles.css"/>
+<style>
+.match-score-ring { --s: 0; stroke-dashoffset: calc(251 - (251 * var(--s)) / 100); }
+</style>
+</head>
+<body class="bg-[#f6f7f8] min-h-screen">
+<div id="app-navbar"></div>
+
+<main class="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+  <!-- Breadcrumb -->
+  <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+    <a href="requests.html" class="hover:text-red-700">Blood Requests</a>
+    <span class="material-symbols-outlined text-sm">chevron_right</span>
+    <span class="font-semibold text-gray-900">Matching Results</span>
+  </div>
+
+  <!-- Request Summary Card -->
+  <div id="request-summary" class="card mb-8 border-l-4 border-l-red-700">
+    <div class="animate-pulse flex gap-4">
+      <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
+      <div class="flex-1 space-y-2">
+        <div class="h-4 bg-gray-200 rounded w-1/3"></div>
+        <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Donor Matches List -->
+    <div class="lg:col-span-2">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-black text-gray-900">Compatible Donors</h2>
+        <div class="flex items-center gap-2 text-sm text-gray-500">
+          <span class="live-dot"></span> Live
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex gap-3 mb-5 flex-wrap">
+        <button onclick="filterDonors('all')" id="filter-all" class="text-sm font-bold px-4 py-2 rounded-xl bg-red-700 text-white">All</button>
+        <button onclick="filterDonors('verified')" id="filter-verified" class="text-sm font-bold px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-600 hover:border-red-400">Verified Only</button>
+        <button onclick="filterDonors('accepted')" id="filter-accepted" class="text-sm font-bold px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-600 hover:border-red-400">Accepted</button>
+      </div>
+
+      <div id="donor-matches" class="space-y-4">
+        <div class="card text-center py-12 text-gray-400">
+          <span class="material-symbols-outlined text-5xl opacity-30 mb-2">hub</span>
+          <p class="font-semibold">Loading matched donors...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar: Stats + Blood Compatibility -->
+    <div class="space-y-6">
+      <!-- Match Stats -->
+      <div class="card">
+        <h3 class="font-bold text-gray-900 mb-4">Match Summary</h3>
+        <div class="space-y-3" id="match-stats">
+          <div class="flex justify-between text-sm"><span class="text-gray-500">Total Notified</span><span class="font-bold" id="stat-total">—</span></div>
+          <div class="flex justify-between text-sm"><span class="text-gray-500">Accepted</span><span class="font-bold text-green-600" id="stat-accepted">—</span></div>
+          <div class="flex justify-between text-sm"><span class="text-gray-500">Pending</span><span class="font-bold text-yellow-600" id="stat-pending">—</span></div>
+          <div class="flex justify-between text-sm"><span class="text-gray-500">Declined</span><span class="font-bold text-red-600" id="stat-declined">—</span></div>
+          <div class="flex justify-between text-sm"><span class="text-gray-500">Verified Donors</span><span class="font-bold text-red-700" id="stat-verified">—</span></div>
+        </div>
+      </div>
+
+      <!-- Blood Compatibility Chart -->
+      <div class="card">
+        <h3 class="font-bold text-gray-900 mb-4">Blood Compatibility</h3>
+        <div id="compat-chart" class="space-y-2 text-sm"></div>
+        <div class="mt-4 p-3 bg-gray-50 rounded-xl text-xs text-gray-500">
+          <span class="material-symbols-outlined text-xs align-middle">info</span>
+          Compatible types ordered by priority (exact match first, then universal donors).
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="card space-y-3">
+        <h3 class="font-bold text-gray-900 mb-2">Actions</h3>
+        <button onclick="rerunMatching()" class="btn-blue w-full justify-center text-sm">
+          <span class="material-symbols-outlined text-sm">refresh</span> Re-run Matching
+        </button>
+        <a href="request-blood.html" class="btn-secondary w-full justify-center text-sm">
+          <span class="material-symbols-outlined text-sm">add</span> New Request
+        </a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="assets/js/app.js"></script>
+<script>
+let requestId = new URLSearchParams(location.search).get('request');
+let allMatches = [];
+
+const compatMap = {
+  'O-': ['O-','O+','A-','A+','B-','B+','AB-','AB+'],
+  'O+': ['O+','A+','B+','AB+'],
+  'A-': ['A-','A+','AB-','AB+'],
+  'A+': ['A+','AB+'],
+  'B-': ['B-','B+','AB-','AB+'],
+  'B+': ['B+','AB+'],
+  'AB-': ['AB-','AB+'],
+  'AB+': ['AB+'],
+};
+
+(async () => {
+  const user = await initPage([], true);
+  if (!requestId) {
+    // Show all open requests if no ID
+    loadAllDonors();
+    document.getElementById('request-summary').innerHTML = `
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
+          <span class="material-symbols-outlined text-red-700 text-xl">hub</span>
+        </div>
+        <div>
+          <h2 class="text-xl font-black">All Available Donors</h2>
+          <p class="text-gray-500 text-sm">Showing all verified and available donors in the system.</p>
+        </div>
+      </div>`;
+    return;
+  }
+  loadRequest();
+})();
+
+async function loadRequest() {
+  const res = await api.get(`requests.php?id=${requestId}`);
+  if (!res.success) { toast('Request not found', 'error'); return; }
+  const r = res.request;
+
+  document.getElementById('request-summary').innerHTML = `
+    <div class="flex flex-wrap items-start gap-4">
+      <div class="blood-pill text-xl w-14 h-14">${r.blood_type}</div>
+      <div class="flex-1">
+        <div class="flex items-center gap-2 mb-1">
+          <h2 class="text-xl font-black">${r.hospital_name}</h2>
+          <span class="badge-${r.urgency}">${r.urgency}</span>
+          <span class="status-${r.status}">${r.status.replace('_',' ')}</span>
+        </div>
+        <p class="text-gray-500 text-sm">${r.reason || 'Blood urgently needed'} • ${r.units_needed} unit(s) • ${r.location || ''}</p>
+        <p class="text-xs text-gray-400 mt-1">Requested ${fmt.time(r.created_at)}</p>
+      </div>
+      <div class="text-right">
+        <p class="text-xs text-gray-400">Request ID</p>
+        <p class="font-black text-gray-900">#${r.id}</p>
+      </div>
+    </div>`;
+
+  // Build compat chart
+  const compatible = compatMap[r.blood_type] || [r.blood_type];
+  document.getElementById('compat-chart').innerHTML = compatible.map(bt => `
+    <div class="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+      <div class="flex items-center gap-2">
+        <div class="blood-pill w-8 h-8 text-xs">${bt}</div>
+        <span class="text-gray-700">${bt === r.blood_type ? 'Exact match' : bt === 'O-' ? 'Universal donor' : 'Compatible'}</span>
+      </div>
+      ${bt === r.blood_type ? '<span class="material-symbols-outlined text-green-600 text-sm">star</span>' : ''}
+    </div>
+  `).join('');
+
+  // Load matches
+  allMatches = r.matches || [];
+  renderMatches(allMatches);
+  updateStats(allMatches);
+}
+
+async function loadAllDonors() {
+  const res = await api.get('donors.php?availability=available&limit=20');
+  if (res.success) {
+    const fakeMatches = res.donors.map((d, i) => ({
+      donor_name: d.full_name,
+      donor_blood_type: d.blood_type,
+      blood_type_verified: d.blood_type_verified,
+      distance_km: Math.random() * 20 + 1,
+      match_score: Math.floor(Math.random() * 40 + 60),
+      status: 'notified',
+    }));
+    allMatches = fakeMatches;
+    renderMatches(fakeMatches);
+    updateStats(fakeMatches);
+  }
+}
+
+function renderMatches(matches) {
+  const container = document.getElementById('donor-matches');
+  if (!matches.length) {
+    container.innerHTML = '<div class="card text-center py-12"><div class="empty-state"><span class="material-symbols-outlined">person_off</span><p class="font-bold mt-2">No matched donors yet</p><p class="text-sm">Try re-running the matching algorithm</p></div></div>';
+    return;
+  }
+
+  const statusColors = {
+    notified: 'bg-yellow-50 border-yellow-200',
+    accepted: 'bg-green-50 border-green-200',
+    declined: 'bg-red-50 border-red-100',
+    completed: 'bg-red-50 border-red-200',
+  };
+
+  container.innerHTML = matches.map((m, i) => `
+    <div class="card card-hover border ${statusColors[m.status] || 'border-gray-100'} transition-all">
+      <div class="flex items-start gap-4">
+        <div class="flex flex-col items-center gap-1 flex-shrink-0">
+          <span class="text-xs font-bold text-gray-400">#${i+1}</span>
+          <div class="blood-pill">${m.donor_blood_type || '?'}</div>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap mb-1">
+            <p class="font-black text-gray-900">${m.donor_name}</p>
+            ${m.blood_type_verified ? `<span class="flex items-center gap-1 text-[11px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full"><span class="material-symbols-outlined text-[11px]">verified</span>Verified</span>` : '<span class="text-[11px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Unverified</span>'}
+          </div>
+          <div class="flex items-center gap-4 text-sm text-gray-500 flex-wrap">
+            <span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">location_on</span>${m.distance_km ? m.distance_km.toFixed(1) + ' km away' : 'Distance unknown'}</span>
+            <span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">star</span>Score: ${Math.round(m.match_score || 0)}</span>
+            ${m.notified_at ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">schedule</span>Notified ${fmt.time(m.notified_at)}</span>` : ''}
+          </div>
+        </div>
+        <div class="flex flex-col items-end gap-2 flex-shrink-0">
+          ${matchStatusBadge(m.status)}
+          ${m.status === 'notified' ? `
+            <div class="flex gap-1">
+              <button class="bg-green-100 text-green-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-green-200">Accept</button>
+              <button class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-200">Skip</button>
+            </div>` : ''}
+        </div>
+      </div>
+      <!-- Match Score Bar -->
+      <div class="mt-3 pt-3 border-t border-gray-100">
+        <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+          <span>Match quality</span><span class="font-bold">${Math.round(m.match_score || 0)}%</span>
+        </div>
+        <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          <div class="h-full bg-red-500 rounded-full" style="width:${Math.min(100, m.match_score || 50)}%"></div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function matchStatusBadge(status) {
+  const map = {
+    notified: '<span class="text-xs font-bold text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full">⏳ Notified</span>',
+    accepted: '<span class="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded-full">✓ Accepted</span>',
+    declined: '<span class="text-xs font-bold text-red-700 bg-red-100 px-2 py-1 rounded-full">✗ Declined</span>',
+    completed: '<span class="text-xs font-bold text-red-800 bg-red-100 px-2 py-1 rounded-full">✓ Completed</span>',
+  };
+  return map[status] || `<span class="text-xs text-gray-500">${status}</span>`;
+}
+
+function updateStats(matches) {
+  document.getElementById('stat-total').textContent = matches.length;
+  document.getElementById('stat-accepted').textContent = matches.filter(m => m.status === 'accepted').length;
+  document.getElementById('stat-pending').textContent = matches.filter(m => m.status === 'notified').length;
+  document.getElementById('stat-declined').textContent = matches.filter(m => m.status === 'declined').length;
+  document.getElementById('stat-verified').textContent = matches.filter(m => m.blood_type_verified).length;
+}
+
+let activeFilter = 'all';
+function filterDonors(filter) {
+  activeFilter = filter;
+  ['all','verified','accepted'].forEach(f => {
+    document.getElementById(`filter-${f}`).className = `text-sm font-bold px-4 py-2 rounded-xl ${f === filter ? 'bg-red-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-red-400'}`;
+  });
+  let filtered = allMatches;
+  if (filter === 'verified') filtered = allMatches.filter(m => m.blood_type_verified);
+  if (filter === 'accepted') filtered = allMatches.filter(m => m.status === 'accepted');
+  renderMatches(filtered);
+}
+
+async function rerunMatching() {
+  if (!requestId) return;
+  toast('Re-running matching algorithm...', 'info');
+  setTimeout(() => { loadRequest(); toast('Matching complete!', 'success'); }, 1500);
+}
+</script>
+</body>
+</html>

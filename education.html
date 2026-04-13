@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LifeLink - Blood Education & Testing</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="assets/css/styles.css"/>
+<style>
+.quiz-option:has(input:checked) { border-color: #B71C1C; background: #E3F2FD; }
+.quiz-option.correct { border-color: #2e7d32; background: #E8F5E9; }
+.quiz-option.wrong { border-color: #B71C1C; background: #FEE2E2; }
+.blood-compat-row:hover { background: #f0f7ff; }
+</style>
+</head>
+<body class="bg-[#f6f7f8] min-h-screen">
+<div id="app-navbar"></div>
+
+<main class="max-w-5xl mx-auto px-4 py-10">
+
+  <!-- Hero -->
+  <div class="bg-gradient-to-br from-red-700 to-red-900 rounded-3xl p-10 text-white mb-10 relative overflow-hidden">
+    <div class="absolute right-0 top-0 opacity-10"><span class="material-symbols-outlined" style="font-size:300px">bloodtype</span></div>
+    <div class="relative z-10 max-w-2xl">
+      <span class="inline-flex items-center gap-2 bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full mb-4">
+        <span class="material-symbols-outlined text-sm">school</span> Blood Discovery Hub
+      </span>
+      <h1 class="text-4xl font-black mb-4">Know Your Blood.<br/>Save a Life.</h1>
+      <p class="text-red-100 text-lg leading-relaxed">Learn about blood types, compatibility, donation eligibility, and take a quiz to test your knowledge. Share this knowledge to save more lives across Ghana.</p>
+    </div>
+  </div>
+
+  <!-- Blood Types Grid -->
+  <section class="mb-12">
+    <h2 class="text-2xl font-black text-gray-900 mb-6">The 8 Blood Types Explained</h2>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="card text-center hover:shadow-lg transition-shadow cursor-pointer" onclick="showBloodDetail('A+')">
+        <div class="blood-pill text-xl w-14 h-14 mx-auto mb-3">A+</div>
+        <p class="font-bold text-gray-900">A Positive</p>
+        <p class="text-xs text-gray-500 mt-1">~30% of population</p>
+        <p class="text-xs text-red-700 mt-2 font-semibold">Can donate to A+, AB+</p>
+      </div>
+      <div class="card text-center hover:shadow-lg transition-shadow cursor-pointer" onclick="showBloodDetail('A-')">
+        <div class="blood-pill text-xl w-14 h-14 mx-auto mb-3">A-</div>
+        <p class="font-bold text-gray-900">A Negative</p>
+        <p class="text-xs text-gray-500 mt-1">~6% of population</p>
+        <p class="text-xs text-red-700 mt-2 font-semibold">Can donate to A±, AB±</p>
+      </div>
+      <div class="card text-center hover:shadow-lg transition-shadow cursor-pointer" onclick="showBloodDetail('B+')">
+        <div class="blood-pill text-xl w-14 h-14 mx-auto mb-3">B+</div>
+        <p class="font-bold text-gray-900">B Positive</p>
+        <p class="text-xs text-gray-500 mt-1">~9% of population</p>
+        <p class="text-xs text-red-700 mt-2 font-semibold">Can donate to B+, AB+</p>
+      </div>
+      <div class="card text-center hover:shadow-lg transition-shadow cursor-pointer" onclick="showBloodDetail('B-')">
+        <div class="blood-pill text-xl w-14 h-14 mx-auto mb-3">B-</div>
+        <p class="font-bold text-gray-900">B Negative</p>
+        <p class="text-xs text-gray-500 mt-1">~2% of population</p>
+        <p class="text-xs text-red-700 mt-2 font-semibold">Can donate to B±, AB±</p>
+      </div>
+      <div class="card text-center hover:shadow-lg transition-shadow cursor-pointer border-2 border-green-200" onclick="showBloodDetail('O+')">
+        <div class="blood-pill text-xl w-14 h-14 mx-auto mb-3">O+</div>
+        <p class="font-bold text-gray-900">O Positive</p>
+        <p class="text-xs text-gray-500 mt-1">~38% of population</p>
+        <p class="text-xs text-green-600 mt-2 font-bold">Most common type</p>
+      </div>
+      <div class="card text-center hover:shadow-lg transition-shadow cursor-pointer border-2 border-red-200" onclick="showBloodDetail('O-')">
+        <div class="blood-pill text-xl w-14 h-14 mx-auto mb-3">O-</div>
+        <p class="font-bold text-gray-900">O Negative</p>
+        <p class="text-xs text-gray-500 mt-1">~7% of population</p>
+        <p class="text-xs text-red-600 mt-2 font-bold">Universal donor 🌍</p>
+      </div>
+      <div class="card text-center hover:shadow-lg transition-shadow cursor-pointer border-2 border-purple-200" onclick="showBloodDetail('AB+')">
+        <div class="blood-pill text-xl w-14 h-14 mx-auto mb-3">AB+</div>
+        <p class="font-bold text-gray-900">AB Positive</p>
+        <p class="text-xs text-gray-500 mt-1">~3% of population</p>
+        <p class="text-xs text-purple-600 mt-2 font-bold">Universal recipient</p>
+      </div>
+      <div class="card text-center hover:shadow-lg transition-shadow cursor-pointer" onclick="showBloodDetail('AB-')">
+        <div class="blood-pill text-xl w-14 h-14 mx-auto mb-3">AB-</div>
+        <p class="font-bold text-gray-900">AB Negative</p>
+        <p class="text-xs text-gray-500 mt-1">~1% of population</p>
+        <p class="text-xs text-red-700 mt-2 font-semibold">Rarest type</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Compatibility Table -->
+  <section class="mb-12">
+    <h2 class="text-2xl font-black text-gray-900 mb-6">Blood Compatibility Chart</h2>
+    <div class="card overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-gray-50">
+            <th class="text-left p-3 font-bold text-gray-600">Donor Type</th>
+            <th class="p-3 font-bold text-gray-600">O-</th>
+            <th class="p-3 font-bold text-gray-600">O+</th>
+            <th class="p-3 font-bold text-gray-600">A-</th>
+            <th class="p-3 font-bold text-gray-600">A+</th>
+            <th class="p-3 font-bold text-gray-600">B-</th>
+            <th class="p-3 font-bold text-gray-600">B+</th>
+            <th class="p-3 font-bold text-gray-600">AB-</th>
+            <th class="p-3 font-bold text-gray-600">AB+</th>
+          </tr>
+        </thead>
+        <tbody id="compat-table"></tbody>
+      </table>
+    </div>
+    <p class="text-xs text-gray-400 mt-2"><span class="material-symbols-outlined text-xs align-middle">info</span> ✓ = Compatible | ✗ = Not Compatible</p>
+  </section>
+
+  <!-- Eligibility Checker -->
+  <section class="mb-12">
+    <h2 class="text-2xl font-black text-gray-900 mb-6">Eligibility Self-Check</h2>
+    <div class="card">
+      <p class="text-gray-600 mb-6">Answer these questions to see if you're currently eligible to donate blood.</p>
+      <div id="eligibility-form" class="space-y-4">
+        <div id="elig-questions"></div>
+        <button onclick="checkEligibility()" class="btn-blue mt-4"><span class="material-symbols-outlined">check_circle</span> Check My Eligibility</button>
+      </div>
+      <div id="eligibility-result" class="hidden mt-6 p-6 rounded-2xl"><!-- filled by JS --></div>
+    </div>
+  </section>
+
+  <!-- Quiz -->
+  <section class="mb-12">
+    <h2 class="text-2xl font-black text-gray-900 mb-2">Blood Knowledge Quiz</h2>
+    <p class="text-gray-500 mb-6">Test what you've learned. 5 questions — can you get them all?</p>
+    <div id="quiz-container" class="space-y-6"><!-- filled by JS --></div>
+    <div id="quiz-result" class="hidden card text-center py-8 mt-6"><!-- filled by JS --></div>
+    <div class="flex gap-3 mt-4">
+      <button id="submit-quiz-btn" onclick="submitQuiz()" class="btn-primary">Submit Quiz</button>
+      <button onclick="resetQuiz()" class="btn-secondary">Reset</button>
+    </div>
+  </section>
+</main>
+
+<!-- Blood Type Detail Modal -->
+<div id="detail-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl">
+    <div id="detail-content"></div>
+    <button onclick="document.getElementById('detail-modal').classList.add('hidden')" class="btn-secondary w-full mt-6 justify-center">Close</button>
+  </div>
+</div>
+
+<script src="assets/js/app.js"></script>
+<script>
+(async () => {
+  const user = await initPage([], true);
+  buildCompatTable();
+  buildEligibility();
+  buildQuiz();
+})();
+
+const compatData = {
+  'O-': ['O-','O+','A-','A+','B-','B+','AB-','AB+'],
+  'O+': ['O+','A+','B+','AB+'],
+  'A-': ['A-','A+','AB-','AB+'],
+  'A+': ['A+','AB+'],
+  'B-': ['B-','B+','AB-','AB+'],
+  'B+': ['B+','AB+'],
+  'AB-': ['AB-','AB+'],
+  'AB+': ['AB+'],
+};
+const allTypes = ['O-','O+','A-','A+','B-','B+','AB-','AB+'];
+
+function buildCompatTable() {
+  const tbody = document.getElementById('compat-table');
+  tbody.innerHTML = allTypes.map(donor => `
+    <tr class="blood-compat-row border-t border-gray-50">
+      <td class="p-3"><div class="flex items-center gap-2"><div class="blood-pill text-xs w-8 h-8">${donor}</div><span class="font-semibold">${donor}</span></div></td>
+      ${allTypes.map(recip => {
+        const ok = compatData[donor]?.includes(recip);
+        return `<td class="p-3 text-center"><span class="text-lg ${ok ? 'text-green-600' : 'text-red-300'}">${ok ? '✓' : '✗'}</span></td>`;
+      }).join('')}
+    </tr>`).join('');
+}
+
+const eligibilityQs = [
+  { id: 'age', q: 'Are you between 18 and 65 years old?', type: 'yn', pass: true },
+  { id: 'weight', q: 'Do you weigh at least 50kg (110 lbs)?', type: 'yn', pass: true },
+  { id: 'healthy', q: 'Are you in good health today with no fever or illness?', type: 'yn', pass: true },
+  { id: 'recent', q: 'Have you donated blood in the last 90 days?', type: 'yn', pass: false },
+  { id: 'meds', q: 'Are you currently taking blood-thinning medications?', type: 'yn', pass: false },
+  { id: 'tattoo', q: 'Have you received a tattoo or piercing in the last 6 months?', type: 'yn', pass: false },
+];
+
+function buildEligibility() {
+  document.getElementById('elig-questions').innerHTML = eligibilityQs.map((q, i) => `
+    <div class="p-4 bg-gray-50 rounded-xl">
+      <p class="font-semibold text-gray-900 mb-3">${i+1}. ${q.q}</p>
+      <div class="flex gap-3">
+        <label class="quiz-option flex-1 border-2 border-gray-200 rounded-xl p-3 text-center cursor-pointer font-bold hover:border-red-400">
+          <input type="radio" name="elig-${q.id}" value="yes" class="hidden"/> Yes
+        </label>
+        <label class="quiz-option flex-1 border-2 border-gray-200 rounded-xl p-3 text-center cursor-pointer font-bold hover:border-red-400">
+          <input type="radio" name="elig-${q.id}" value="no" class="hidden"/> No
+        </label>
+      </div>
+    </div>`).join('');
+}
+
+function checkEligibility() {
+  let eligible = true;
+  let unanswered = false;
+  for (const q of eligibilityQs) {
+    const val = document.querySelector(`input[name="elig-${q.id}"]:checked`)?.value;
+    if (!val) { unanswered = true; break; }
+    const answered = val === 'yes';
+    if (q.pass && !answered) eligible = false;
+    if (!q.pass && answered) eligible = false;
+  }
+  if (unanswered) { toast('Please answer all questions', 'error'); return; }
+
+  const result = document.getElementById('eligibility-result');
+  result.classList.remove('hidden');
+  result.className = `mt-6 p-6 rounded-2xl ${eligible ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`;
+  result.innerHTML = eligible
+    ? `<div class="flex items-center gap-4"><span class="material-symbols-outlined text-green-600 text-4xl">check_circle</span><div><p class="text-xl font-black text-green-800">You appear eligible to donate.</p><p class="text-green-700 mt-1">Please confirm with a healthcare professional. Your donation can save up to 3 lives.</p><a href="register.html" class="btn-primary mt-4 inline-flex text-sm">Register as a Donor</a></div></div>`
+    : `<div class="flex items-center gap-4"><span class="material-symbols-outlined text-red-700 text-4xl">cancel</span><div><p class="text-xl font-black text-red-800">You may not be eligible right now.</p><p class="text-red-700 mt-1">One or more answers suggests a temporary or permanent deferral. Please consult your doctor for a professional assessment.</p></div></div>`;
+}
+
+const quiz = [
+  { q: 'Which blood type is called the "universal donor"?', options: ['AB+','O+','O-','A-'], answer: 2 },
+  { q: 'What is the minimum weight required to donate blood?', options: ['40kg','50kg','60kg','70kg'], answer: 1 },
+  { q: 'How often can you donate whole blood?', options: ['Every 30 days','Every 56 days (8 weeks)','Every 6 months','Once per year'], answer: 1 },
+  { q: 'Which blood type can receive from ALL other types?', options: ['O-','A+','B+','AB+'], answer: 3 },
+  { q: 'What is Ghana\'s estimated blood shortage shortfall (approximate)?', options: ['10%','20%','40%','60%'], answer: 2 },
+];
+
+function buildQuiz() {
+  document.getElementById('quiz-container').innerHTML = quiz.map((q, i) => `
+    <div class="card">
+      <p class="font-black text-gray-900 mb-4">${i+1}. ${q.q}</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        ${q.options.map((opt, j) => `
+          <label class="quiz-option border-2 border-gray-200 rounded-xl p-3 cursor-pointer hover:border-red-400 flex items-center gap-2" id="q${i}-opt${j}">
+            <input type="radio" name="quiz-${i}" value="${j}" class="hidden"/>
+            <span class="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center text-xs font-bold flex-shrink-0">${String.fromCharCode(65+j)}</span>
+            <span class="text-sm font-semibold">${opt}</span>
+          </label>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function submitQuiz() {
+  let score = 0;
+  let allAnswered = true;
+  quiz.forEach((q, i) => {
+    const sel = document.querySelector(`input[name="quiz-${i}"]:checked`);
+    if (!sel) { allAnswered = false; return; }
+    const ans = parseInt(sel.value);
+    for (let j = 0; j < q.options.length; j++) {
+      const label = document.getElementById(`q${i}-opt${j}`);
+      if (j === q.answer) label.classList.add('correct');
+      else if (j === ans && ans !== q.answer) label.classList.add('wrong');
+    }
+    if (ans === q.answer) score++;
+  });
+  if (!allAnswered) { toast('Please answer all questions!', 'error'); return; }
+  document.getElementById('submit-quiz-btn').disabled = true;
+  const pct = Math.round((score / quiz.length) * 100);
+  const result = document.getElementById('quiz-result');
+  result.classList.remove('hidden');
+  result.innerHTML = `
+    <div class="text-6xl font-black mb-2 ${pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-yellow-600' : 'text-red-700'}">${score}/${quiz.length}</div>
+    <p class="text-xl font-bold ${pct >= 80 ? 'text-green-700' : pct >= 60 ? 'text-yellow-700' : 'text-red-700'} mb-2">
+      ${pct >= 80 ? 'Excellent! You\'re a blood knowledge expert.' : pct >= 60 ? 'Good effort! Review the material above.' : 'Keep learning! You can retake the quiz.'}
+    </p>
+    <p class="text-gray-500 text-sm">Score: ${pct}%</p>`;
+}
+
+function resetQuiz() {
+  document.getElementById('submit-quiz-btn').disabled = false;
+  document.getElementById('quiz-result').classList.add('hidden');
+  buildQuiz();
+}
+
+const bloodDetails = {
+  'O-': { title: 'O Negative — Universal Donor', desc: 'O- is the universal donor — it can be given to any patient in an emergency. However, O- individuals can only receive O- blood. People with this type are urgently needed in blood banks.', facts: ['7% of people have this type', 'Most in-demand for emergencies', 'Safe for newborns'] },
+  'O+': { title: 'O Positive — Most Common', desc: 'O+ is the most common blood type worldwide. Donors can give to all positive types. Most emergency blood transfusions use O+ blood.', facts: ['38% of population', 'Can donate to O+, A+, B+, AB+', 'Critical for trauma care'] },
+  'AB+': { title: 'AB Positive — Universal Recipient', desc: 'AB+ individuals are universal recipients — they can receive blood from any type. They can also donate plasma to everyone.', facts: ['Only 3% of population', 'Accepts all blood types', 'Universal plasma donor'] },
+};
+
+function showBloodDetail(type) {
+  const d = bloodDetails[type] || { title: `Blood Type ${type}`, desc: 'Information about this blood type.', facts: [] };
+  document.getElementById('detail-content').innerHTML = `
+    <div class="flex items-center gap-4 mb-5">
+      <div class="blood-pill text-2xl w-16 h-16">${type}</div>
+      <h3 class="text-xl font-black text-gray-900">${d.title}</h3>
+    </div>
+    <p class="text-gray-600 mb-4">${d.desc}</p>
+    <ul class="space-y-2">${d.facts.map(f => `<li class="flex items-center gap-2 text-sm"><span class="material-symbols-outlined text-red-700 text-sm">check_circle</span>${f}</li>`).join('')}</ul>`;
+  document.getElementById('detail-modal').classList.remove('hidden');
+}
+</script>
+</body>
+</html>

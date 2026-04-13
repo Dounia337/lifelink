@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LifeLink - Request Blood</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="assets/css/styles.css"/>
+<style>
+.blood-option:has(input:checked) { background: #B71C1C; color: white; border-color: #B71C1C; }
+.urgency-option:has(input:checked) { border-color: currentColor; }
+#urgency-critical:has(input:checked) { background: #FEE2E2; border-color: #B71C1C; }
+#urgency-urgent:has(input:checked)   { background: #FFF3E0; border-color: #E65100; }
+#urgency-standard:has(input:checked) { background: #FEE2E2; border-color: #B71C1C; }
+.step { display: none; } .step.active { display: block; }
+.step-dot { width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;transition:all 0.3s; }
+.step-dot.done { background:#2e7d32;color:white; }
+.step-dot.current { background:#B71C1C;color:white; }
+.step-dot.pending { background:#E5E7EB;color:#9CA3AF; }
+</style>
+</head>
+<body class="bg-[#f6f7f8] min-h-screen">
+<div id="app-navbar"></div>
+
+<main class="max-w-3xl mx-auto px-4 py-10">
+  <!-- Header -->
+  <div class="text-center mb-10">
+    <div class="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-2xl mb-4">
+      <span class="material-symbols-outlined text-red-700 text-3xl">bloodtype</span>
+    </div>
+    <h1 class="text-3xl font-black text-gray-900">Request Blood</h1>
+    <p class="text-gray-500 mt-2">Complete the form below. Compatible donors will be notified instantly.</p>
+  </div>
+
+  <!-- Progress Steps -->
+  <div class="flex items-center justify-center gap-0 mb-10">
+    <div class="flex items-center gap-2">
+      <div class="step-dot current" id="dot-1">1</div>
+      <span class="text-sm font-semibold text-red-700 hidden sm:block">Patient Info</span>
+    </div>
+    <div class="h-px w-12 sm:w-20 bg-gray-200 mx-2"></div>
+    <div class="flex items-center gap-2">
+      <div class="step-dot pending" id="dot-2">2</div>
+      <span class="text-sm font-semibold text-gray-400 hidden sm:block">Blood Details</span>
+    </div>
+    <div class="h-px w-12 sm:w-20 bg-gray-200 mx-2"></div>
+    <div class="flex items-center gap-2">
+      <div class="step-dot pending" id="dot-3">3</div>
+      <span class="text-sm font-semibold text-gray-400 hidden sm:block">Confirm</span>
+    </div>
+  </div>
+
+  <div class="card shadow-lg">
+
+    <!-- STEP 1: Patient Info -->
+    <div id="step-1" class="step active">
+      <h2 class="text-xl font-black text-gray-900 mb-1">Patient Information</h2>
+      <p class="text-gray-500 text-sm mb-6">Basic details about the patient needing blood.</p>
+      <div class="space-y-5">
+        <div>
+          <label class="form-label">Patient Name (or Anonymous)</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">person</span>
+            <input id="patient-name" class="form-input pl-12" placeholder="Patient's name or 'Anonymous'" type="text" value="Anonymous"/>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Hospital / Facility Name *</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">local_hospital</span>
+            <input id="hospital-name" class="form-input pl-12" placeholder="e.g. Korle Bu Teaching Hospital" type="text" required/>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Ward / Department</label>
+            <input id="ward" class="form-input" placeholder="e.g. ICU, Maternity" type="text"/>
+          </div>
+          <div>
+            <label class="form-label">City *</label>
+            <input id="city" class="form-input" placeholder="e.g. Accra" type="text" required/>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Reason for Request</label>
+          <textarea id="reason" class="form-input" rows="3" placeholder="e.g. Emergency surgery following road accident..."></textarea>
+        </div>
+      </div>
+      <div class="flex justify-end mt-8">
+        <button onclick="goToStep(2)" class="btn-blue">Next <span class="material-symbols-outlined text-sm">arrow_forward</span></button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Blood Details -->
+    <div id="step-2" class="step">
+      <h2 class="text-xl font-black text-gray-900 mb-1">Blood Requirements</h2>
+      <p class="text-gray-500 text-sm mb-6">Specify the exact blood type and urgency level.</p>
+      <div class="space-y-6">
+        <div>
+          <label class="form-label">Required Blood Type *</label>
+          <div class="grid grid-cols-4 gap-2">
+            <label class="blood-option flex items-center justify-center h-12 rounded-xl border-2 border-gray-200 text-sm font-black cursor-pointer hover:border-red-400 transition-all"><input class="hidden" name="blood_type" type="radio" value="A+"/>A+</label>
+            <label class="blood-option flex items-center justify-center h-12 rounded-xl border-2 border-gray-200 text-sm font-black cursor-pointer hover:border-red-400 transition-all"><input class="hidden" name="blood_type" type="radio" value="A-"/>A-</label>
+            <label class="blood-option flex items-center justify-center h-12 rounded-xl border-2 border-gray-200 text-sm font-black cursor-pointer hover:border-red-400 transition-all"><input class="hidden" name="blood_type" type="radio" value="B+"/>B+</label>
+            <label class="blood-option flex items-center justify-center h-12 rounded-xl border-2 border-gray-200 text-sm font-black cursor-pointer hover:border-red-400 transition-all"><input class="hidden" name="blood_type" type="radio" value="B-"/>B-</label>
+            <label class="blood-option flex items-center justify-center h-12 rounded-xl border-2 border-gray-200 text-sm font-black cursor-pointer hover:border-red-400 transition-all"><input class="hidden" name="blood_type" type="radio" value="AB+"/>AB+</label>
+            <label class="blood-option flex items-center justify-center h-12 rounded-xl border-2 border-gray-200 text-sm font-black cursor-pointer hover:border-red-400 transition-all"><input class="hidden" name="blood_type" type="radio" value="AB-"/>AB-</label>
+            <label class="blood-option flex items-center justify-center h-12 rounded-xl border-2 border-gray-200 text-sm font-black cursor-pointer hover:border-red-400 transition-all"><input class="hidden" name="blood_type" type="radio" value="O+"/>O+</label>
+            <label class="blood-option flex items-center justify-center h-12 rounded-xl border-2 border-gray-200 text-sm font-black cursor-pointer hover:border-red-400 transition-all"><input class="hidden" name="blood_type" type="radio" value="O-"/>O-</label>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Units Needed *</label>
+          <div class="flex items-center gap-3">
+            <button type="button" onclick="changeUnits(-1)" class="w-10 h-10 rounded-xl bg-gray-100 text-gray-700 font-bold text-xl hover:bg-gray-200 flex items-center justify-center">−</button>
+            <input id="units" type="number" class="form-input text-center font-black text-xl w-24" value="1" min="1" max="10"/>
+            <button type="button" onclick="changeUnits(1)" class="w-10 h-10 rounded-xl bg-gray-100 text-gray-700 font-bold text-xl hover:bg-gray-200 flex items-center justify-center">+</button>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Urgency Level *</label>
+          <div class="grid grid-cols-3 gap-3">
+            <label id="urgency-critical" class="urgency-option border-2 border-gray-200 rounded-xl p-4 cursor-pointer hover:border-red-400 transition-all text-center">
+              <input class="hidden" name="urgency" type="radio" value="critical"/>
+              <span class="material-symbols-outlined text-red-600 text-2xl block mb-1">emergency</span>
+              <span class="text-sm font-black text-red-700">CRITICAL</span>
+              <p class="text-[11px] text-gray-500 mt-1">Life-threatening, immediate</p>
+            </label>
+            <label id="urgency-urgent" class="urgency-option border-2 border-gray-200 rounded-xl p-4 cursor-pointer hover:border-orange-400 transition-all text-center">
+              <input class="hidden" name="urgency" type="radio" value="urgent"/>
+              <span class="material-symbols-outlined text-orange-500 text-2xl block mb-1">priority_high</span>
+              <span class="text-sm font-black text-orange-700">URGENT</span>
+              <p class="text-[11px] text-gray-500 mt-1">Needed within hours</p>
+            </label>
+            <label id="urgency-standard" class="urgency-option border-2 border-gray-200 rounded-xl p-4 cursor-pointer hover:border-red-400 transition-all text-center">
+              <input class="hidden" name="urgency" type="radio" value="standard"/>
+              <span class="material-symbols-outlined text-red-600 text-2xl block mb-1">schedule</span>
+              <span class="text-sm font-black text-red-800">STANDARD</span>
+              <p class="text-[11px] text-gray-500 mt-1">Planned, within 24–48h</p>
+            </label>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Additional Notes</label>
+          <textarea id="notes" class="form-input" rows="2" placeholder="Any special requirements or context..."></textarea>
+        </div>
+      </div>
+      <div class="flex justify-between mt-8">
+        <button onclick="goToStep(1)" class="btn-secondary"><span class="material-symbols-outlined text-sm">arrow_back</span> Back</button>
+        <button onclick="goToStep(3)" class="btn-blue">Review Request <span class="material-symbols-outlined text-sm">arrow_forward</span></button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Confirm -->
+    <div id="step-3" class="step">
+      <h2 class="text-xl font-black text-gray-900 mb-1">Review & Submit</h2>
+      <p class="text-gray-500 text-sm mb-6">Please review all details before submitting.</p>
+      <div class="bg-gray-50 rounded-2xl p-6 space-y-4 mb-6" id="review-content">
+        <!-- Filled by JS -->
+      </div>
+      <div class="bg-red-50 border border-red-200 rounded-xl p-4 flex gap-3 mb-6">
+        <span class="material-symbols-outlined text-red-700 flex-shrink-0">info</span>
+        <div>
+          <p class="text-sm font-bold text-red-800">What happens next?</p>
+          <p class="text-sm text-red-700 mt-1">Compatible donors within your area will be instantly notified. You'll receive updates as donors respond. Critical requests are broadcast to all available donors immediately.</p>
+        </div>
+      </div>
+      <div class="flex justify-between">
+        <button onclick="goToStep(2)" class="btn-secondary"><span class="material-symbols-outlined text-sm">arrow_back</span> Back</button>
+        <button id="submit-btn" onclick="submitRequest()" class="btn-primary text-base px-8">
+          <span class="material-symbols-outlined">send</span> Submit Request & Notify Donors
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /card -->
+
+  <!-- Success -->
+  <div id="success-panel" class="hidden card text-center py-16">
+    <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+      <span class="material-symbols-outlined text-green-600 text-4xl">check_circle</span>
+    </div>
+    <h2 class="text-2xl font-black text-gray-900 mb-2">Request Submitted!</h2>
+    <p class="text-gray-500 mb-2">Request ID: <strong id="request-id-display">#—</strong></p>
+    <p class="text-gray-500 mb-8">Compatible donors are being notified now. You'll receive updates as they respond.</p>
+    <div class="flex gap-4 justify-center">
+      <a href="matching.html" class="btn-primary">View Matching Results</a>
+      <a href="hospital-dashboard.html" class="btn-secondary">Back to Dashboard</a>
+    </div>
+  </div>
+</main>
+
+<script src="assets/js/app.js"></script>
+<script>
+let currentStep = 1;
+
+async function checkAuth() {
+  const user = await auth.me();
+  renderNavbar(user);
+  // Public users can also submit requests (for emergency use)
+}
+checkAuth();
+
+function goToStep(n) {
+  // Validate step 1
+  if (n > 1 && currentStep === 1) {
+    if (!document.getElementById('hospital-name').value.trim()) { toast('Please enter the hospital name', 'error'); return; }
+    if (!document.getElementById('city').value.trim()) { toast('Please enter the city', 'error'); return; }
+  }
+  // Validate step 2
+  if (n > 2 && currentStep === 2) {
+    if (!document.querySelector('input[name="blood_type"]:checked')) { toast('Please select a blood type', 'error'); return; }
+    if (!document.querySelector('input[name="urgency"]:checked')) { toast('Please select urgency level', 'error'); return; }
+  }
+
+  document.getElementById(`step-${currentStep}`).classList.remove('active');
+  document.getElementById(`step-${n}`).classList.add('active');
+
+  // Update dots
+  for (let i = 1; i <= 3; i++) {
+    const dot = document.getElementById(`dot-${i}`);
+    dot.className = 'step-dot ' + (i < n ? 'done' : i === n ? 'current' : 'pending');
+    if (i < n) dot.innerHTML = '<span class="material-symbols-outlined text-sm">check</span>';
+    else dot.textContent = i;
+  }
+
+  if (n === 3) buildReview();
+  currentStep = n;
+}
+
+function changeUnits(delta) {
+  const input = document.getElementById('units');
+  input.value = Math.max(1, Math.min(10, parseInt(input.value || 1) + delta));
+}
+
+function buildReview() {
+  const bt = document.querySelector('input[name="blood_type"]:checked')?.value || '—';
+  const urg = document.querySelector('input[name="urgency"]:checked')?.value || '—';
+  document.getElementById('review-content').innerHTML = `
+    <div class="grid grid-cols-2 gap-4">
+      <div><p class="text-xs font-bold text-gray-400 uppercase mb-1">Patient</p><p class="font-semibold">${document.getElementById('patient-name').value || 'Anonymous'}</p></div>
+      <div><p class="text-xs font-bold text-gray-400 uppercase mb-1">Hospital</p><p class="font-semibold">${document.getElementById('hospital-name').value}</p></div>
+      <div><p class="text-xs font-bold text-gray-400 uppercase mb-1">Blood Type</p><div class="blood-pill inline-flex text-sm">${bt}</div></div>
+      <div><p class="text-xs font-bold text-gray-400 uppercase mb-1">Units</p><p class="font-black text-2xl">${document.getElementById('units').value}</p></div>
+      <div><p class="text-xs font-bold text-gray-400 uppercase mb-1">Urgency</p><span class="badge-${urg}">${urg}</span></div>
+      <div><p class="text-xs font-bold text-gray-400 uppercase mb-1">Location</p><p class="font-semibold">${document.getElementById('city').value}</p></div>
+      ${document.getElementById('reason').value ? `<div class="col-span-2"><p class="text-xs font-bold text-gray-400 uppercase mb-1">Reason</p><p class="text-sm">${document.getElementById('reason').value}</p></div>` : ''}
+    </div>
+  `;
+}
+
+async function submitRequest() {
+  const btn = document.getElementById('submit-btn');
+  setButtonLoading(btn, true);
+
+  const payload = {
+    patient_name: document.getElementById('patient-name').value || 'Anonymous',
+    location: document.getElementById('hospital-name').value + ', ' + document.getElementById('city').value,
+    ward: document.getElementById('ward').value,
+    reason: document.getElementById('reason').value,
+    blood_type: document.querySelector('input[name="blood_type"]:checked')?.value,
+    units_needed: parseInt(document.getElementById('units').value),
+    urgency: document.querySelector('input[name="urgency"]:checked')?.value,
+    notes: document.getElementById('notes').value,
+    city: document.getElementById('city').value,
+    // Default coords for Accra if not given
+    latitude: 5.6037,
+    longitude: -0.1870,
+  };
+
+  const res = await api.post('requests.php', payload);
+  setButtonLoading(btn, false);
+
+  if (res.success) {
+    document.querySelector('.card').classList.add('hidden');
+    document.getElementById('success-panel').classList.remove('hidden');
+    document.getElementById('request-id-display').textContent = '#' + res.request_id;
+    if (window.scrollTo) window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    toast(res.message || 'Failed to submit request', 'error');
+  }
+}
+</script>
+</body>
+</html>

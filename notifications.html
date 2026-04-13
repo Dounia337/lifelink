@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LifeLink - Notifications</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="assets/css/styles.css"/>
+<style>
+.notif-item { transition: background 0.2s; }
+.notif-item.unread { border-left: 3px solid #B71C1C; background: #F0F7FF; }
+.notif-item.unread:hover { background: #E3F0FF; }
+</style>
+</head>
+<body class="bg-[#f6f7f8] min-h-screen">
+<div id="app-navbar"></div>
+
+<main class="max-w-3xl mx-auto px-4 py-10">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-3xl font-black text-gray-900">Notifications</h1>
+      <p class="text-gray-500 mt-1">Stay up to date with blood requests and matches.</p>
+    </div>
+    <button onclick="markAllRead()" class="btn-secondary text-sm py-2">
+      <span class="material-symbols-outlined text-sm">done_all</span> Mark All Read
+    </button>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div class="flex gap-2 mb-6 bg-white rounded-xl p-1 border border-gray-100">
+    <button onclick="filterNotifs('all')" id="tab-all" class="flex-1 py-2.5 text-sm font-bold rounded-lg bg-red-700 text-white transition-all">All</button>
+    <button onclick="filterNotifs('emergency_request')" id="tab-emergency" class="flex-1 py-2.5 text-sm font-bold rounded-lg text-gray-500 hover:text-red-700 transition-all">Emergencies</button>
+    <button onclick="filterNotifs('match_found')" id="tab-match" class="flex-1 py-2.5 text-sm font-bold rounded-lg text-gray-500 hover:text-red-700 transition-all">Matches</button>
+    <button onclick="filterNotifs('system')" id="tab-system" class="flex-1 py-2.5 text-sm font-bold rounded-lg text-gray-500 hover:text-red-700 transition-all">System</button>
+  </div>
+
+  <!-- Notifications List -->
+  <div id="notifs-list" class="space-y-3">
+    <div class="card text-center py-12 text-gray-400">
+      <span class="material-symbols-outlined text-5xl opacity-30 mb-2">notifications</span>
+      <p class="font-semibold">Loading notifications...</p>
+    </div>
+  </div>
+
+  <div id="load-more-wrapper" class="hidden text-center mt-6">
+    <button onclick="loadMore()" class="btn-secondary text-sm">Load More</button>
+  </div>
+</main>
+
+<script src="assets/js/app.js"></script>
+<script>
+let allNotifs = [];
+let activeFilter = 'all';
+let offset = 0;
+
+(async () => {
+  await initPage();
+  loadNotifications();
+})();
+
+async function loadNotifications(append = false) {
+  const res = await api.get(`admin.php?action=notifications&limit=20&offset=${offset}`);
+  if (!res.success) { toast('Failed to load notifications', 'error'); return; }
+
+  if (append) {
+    allNotifs = [...allNotifs, ...(res.notifications || [])];
+  } else {
+    allNotifs = res.notifications || [];
+  }
+
+  renderNotifs();
+  document.getElementById('load-more-wrapper').classList.toggle('hidden', (res.notifications?.length || 0) < 20);
+}
+
+function renderNotifs() {
+  const list = document.getElementById('notifs-list');
+  let filtered = allNotifs;
+  if (activeFilter !== 'all') filtered = allNotifs.filter(n => n.type === activeFilter || (activeFilter === 'system' && ['system','verification','reminder'].includes(n.type)));
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="card text-center py-12"><div class="empty-state"><span class="material-symbols-outlined">notifications_off</span><p class="font-bold mt-2 text-gray-600">No ${activeFilter !== 'all' ? activeFilter.replace('_',' ') : ''} notifications</p></div></div>`;
+    return;
+  }
+
+  const typeConfig = {
+    emergency_request: { icon: 'emergency', color: 'text-red-600', bg: 'bg-red-100' },
+    match_found: { icon: 'hub', color: 'text-red-700', bg: 'bg-red-100' },
+    request_fulfilled: { icon: 'check_circle', color: 'text-green-600', bg: 'bg-green-100' },
+    verification: { icon: 'verified', color: 'text-purple-600', bg: 'bg-purple-100' },
+    reminder: { icon: 'alarm', color: 'text-yellow-600', bg: 'bg-yellow-100' },
+    system: { icon: 'info', color: 'text-gray-600', bg: 'bg-gray-100' },
+  };
+
+  list.innerHTML = filtered.map(n => {
+    const cfg = typeConfig[n.type] || typeConfig.system;
+    return `
+    <div class="notif-item card cursor-pointer ${!n.is_read ? 'unread' : ''} hover:shadow-md" onclick="markRead(${n.id}, this)">
+      <div class="flex items-start gap-4">
+        <div class="w-10 h-10 rounded-xl ${cfg.bg} flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined ${cfg.color} text-xl">${cfg.icon}</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-start justify-between gap-2">
+            <p class="font-bold text-gray-900 ${!n.is_read ? 'text-red-900' : ''}">${n.title}</p>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              ${!n.is_read ? '<span class="w-2 h-2 rounded-full bg-red-700"></span>' : ''}
+              <span class="text-xs text-gray-400 whitespace-nowrap">${fmt.time(n.created_at)}</span>
+            </div>
+          </div>
+          <p class="text-sm text-gray-600 mt-1">${n.message}</p>
+          ${n.related_request_id ? `
+            <div class="flex gap-2 mt-3">
+              <a href="matching.html?request=${n.related_request_id}" class="btn-blue text-xs py-1.5 px-3">View Match</a>
+              ${n.type === 'emergency_request' ? '<button class="bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-green-700">Accept</button>' : ''}
+            </div>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterNotifs(type) {
+  activeFilter = type;
+  ['all','emergency','match','system'].forEach(t => {
+    const id = `tab-${t}`;
+    const isActive = (t === 'all' && type === 'all') ||
+                     (t === 'emergency' && type === 'emergency_request') ||
+                     (t === 'match' && type === 'match_found') ||
+                     (t === 'system' && type === 'system');
+    document.getElementById(id).className = `flex-1 py-2.5 text-sm font-bold rounded-lg ${isActive ? 'bg-red-700 text-white' : 'text-gray-500 hover:text-red-700'} transition-all`;
+  });
+  renderNotifs();
+}
+
+async function markRead(id, el) {
+  if (!el.classList.contains('unread')) return;
+  await api.put('admin.php?action=mark_read', { id });
+  el.classList.remove('unread');
+  const dot = el.querySelector('.w-2.h-2.rounded-full.bg-red-700');
+  if (dot) dot.remove();
+}
+
+async function markAllRead() {
+  await api.put('admin.php?action=mark_read', { all: true });
+  document.querySelectorAll('.notif-item.unread').forEach(el => {
+    el.classList.remove('unread');
+    el.querySelector('.w-2.h-2.rounded-full.bg-red-700')?.remove();
+  });
+  toast('All notifications marked as read', 'success');
+}
+
+function loadMore() {
+  offset += 20;
+  loadNotifications(true);
+}
+</script>
+</body>
+</html>

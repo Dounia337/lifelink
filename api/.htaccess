@@ -1,0 +1,11 @@
+# Protect config file from direct access
+<Files "config.php">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Allow API PHP files
+<FilesMatch "\.php$">
+    Order allow,deny
+    Allow from all
+</FilesMatch>

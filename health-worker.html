@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LifeLink - Health Worker Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="assets/css/styles.css"/>
+<style>.blood-opt:has(input:checked){background:#B71C1C;color:white;border-color:#B71C1C}</style>
+</head>
+<body class="bg-[#f6f7f8] min-h-screen">
+<div id="app-navbar"></div>
+
+<div class="flex max-w-[1400px] mx-auto">
+  <aside class="sidebar hidden md:flex flex-col">
+    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-2">Health Worker</p>
+    <nav class="space-y-1">
+      <a href="health-worker.html" class="sidebar-link active"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
+      <a href="requests.html" class="sidebar-link"><span class="material-symbols-outlined">bloodtype</span>Blood Requests</a>
+      <a href="notifications.html" class="sidebar-link"><span class="material-symbols-outlined">notifications</span>Notifications</a>
+      <a href="profile.html" class="sidebar-link"><span class="material-symbols-outlined">manage_accounts</span>Profile</a>
+    </nav>
+  </aside>
+
+  <main class="flex-1 p-6 lg:p-8">
+    <div class="mb-8">
+      <h1 class="text-3xl font-black text-gray-900">Health Worker Dashboard</h1>
+      <p class="text-gray-500 mt-1">Verify blood types and manage donation records.</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-3 gap-4 mb-8">
+      <div class="stat-card"><div class="stat-value" id="hw-verified">—</div><div class="stat-label">Verifications Done</div></div>
+      <div class="stat-card"><div class="stat-value text-orange-600" id="hw-pending">—</div><div class="stat-label">Pending Donors</div></div>
+      <div class="stat-card"><div class="stat-value text-green-600" id="hw-donations">—</div><div class="stat-label">Donations Recorded</div></div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Verify Blood Type -->
+      <div class="card">
+        <h2 class="text-lg font-black text-gray-900 mb-5 flex items-center gap-2">
+          <span class="material-symbols-outlined text-red-700">verified</span> Verify Donor Blood Type
+        </h2>
+        <div class="space-y-4">
+          <div>
+            <label class="form-label">Search Donor by Name or Email</label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+              <input id="donor-search-input" class="form-input pl-12" placeholder="Type name or email..." type="text" oninput="searchDonors()"/>
+            </div>
+            <div id="donor-search-results" class="mt-2 space-y-2 max-h-48 overflow-y-auto hidden"></div>
+          </div>
+
+          <div id="selected-donor-card" class="hidden bg-red-50 rounded-xl p-4 border border-red-200">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-bold text-gray-900" id="sel-donor-name">—</p>
+                <p class="text-sm text-gray-500" id="sel-donor-info">—</p>
+              </div>
+              <button onclick="clearSelectedDonor()" class="text-gray-400 hover:text-gray-600">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label class="form-label">Confirmed Blood Type</label>
+            <div class="grid grid-cols-4 gap-2">
+              <label class="blood-opt flex items-center justify-center h-10 rounded-xl border-2 border-gray-200 text-xs font-black cursor-pointer hover:border-red-400"><input class="hidden" name="hw_blood" type="radio" value="A+"/>A+</label>
+              <label class="blood-opt flex items-center justify-center h-10 rounded-xl border-2 border-gray-200 text-xs font-black cursor-pointer hover:border-red-400"><input class="hidden" name="hw_blood" type="radio" value="A-"/>A-</label>
+              <label class="blood-opt flex items-center justify-center h-10 rounded-xl border-2 border-gray-200 text-xs font-black cursor-pointer hover:border-red-400"><input class="hidden" name="hw_blood" type="radio" value="B+"/>B+</label>
+              <label class="blood-opt flex items-center justify-center h-10 rounded-xl border-2 border-gray-200 text-xs font-black cursor-pointer hover:border-red-400"><input class="hidden" name="hw_blood" type="radio" value="B-"/>B-</label>
+              <label class="blood-opt flex items-center justify-center h-10 rounded-xl border-2 border-gray-200 text-xs font-black cursor-pointer hover:border-red-400"><input class="hidden" name="hw_blood" type="radio" value="AB+"/>AB+</label>
+              <label class="blood-opt flex items-center justify-center h-10 rounded-xl border-2 border-gray-200 text-xs font-black cursor-pointer hover:border-red-400"><input class="hidden" name="hw_blood" type="radio" value="AB-"/>AB-</label>
+              <label class="blood-opt flex items-center justify-center h-10 rounded-xl border-2 border-gray-200 text-xs font-black cursor-pointer hover:border-red-400"><input class="hidden" name="hw_blood" type="radio" value="O+"/>O+</label>
+              <label class="blood-opt flex items-center justify-center h-10 rounded-xl border-2 border-gray-200 text-xs font-black cursor-pointer hover:border-red-400"><input class="hidden" name="hw_blood" type="radio" value="O-"/>O-</label>
+            </div>
+          </div>
+
+          <button onclick="verifyBloodType()" id="verify-btn" class="btn-blue w-full justify-center">
+            <span class="material-symbols-outlined">verified</span> Verify Blood Type
+          </button>
+        </div>
+      </div>
+
+      <!-- Unverified Donors List -->
+      <div class="card">
+        <h2 class="text-lg font-black text-gray-900 mb-5 flex items-center gap-2">
+          <span class="material-symbols-outlined text-orange-500">pending</span> Donors Awaiting Verification
+        </h2>
+        <div id="unverified-donors" class="space-y-3 max-h-96 overflow-y-auto">
+          <div class="text-center text-gray-400 py-8">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Verifications -->
+    <div class="card mt-6">
+      <h2 class="text-lg font-black text-gray-900 mb-4">Recent Verification Log</h2>
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead><tr><th>Donor</th><th>Blood Type</th><th>Verified</th><th>Date</th></tr></thead>
+          <tbody id="verif-log">
+            <tr><td colspan="4" class="text-center py-8 text-gray-400">No verifications yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="assets/js/app.js"></script>
+<script>
+let selectedDonorId = null;
+let searchTimer = null;
+
+(async () => {
+  await initPage(['health_worker', 'admin']);
+  loadUnverifiedDonors();
+  loadStats();
+})();
+
+async function loadStats() {
+  const res = await api.get('donors.php?verified=0&limit=1');
+  if (res.success) document.getElementById('hw-pending').textContent = res.donors?.length || 0;
+  const res2 = await api.get('donors.php?verified=1&limit=1');
+  if (res2.success) document.getElementById('hw-verified').textContent = res2.donors?.length || '—';
+  document.getElementById('hw-donations').textContent = '—';
+}
+
+async function loadUnverifiedDonors() {
+  const res = await api.get('donors.php?verified=0&limit=20');
+  const container = document.getElementById('unverified-donors');
+  if (!res.success || !res.donors?.length) {
+    container.innerHTML = '<div class="text-center text-gray-400 py-8"><span class="material-symbols-outlined text-4xl opacity-30 block mb-2">check_circle</span>All donors verified!</div>';
+    return;
+  }
+  document.getElementById('hw-pending').textContent = res.donors.length;
+  container.innerHTML = res.donors.map(d => `
+    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-orange-50 transition-colors">
+      <div class="flex items-center gap-3">
+        <div class="blood-pill text-xs w-9 h-9">${d.blood_type === 'unknown' ? '?' : d.blood_type}</div>
+        <div>
+          <p class="font-bold text-sm text-gray-900">${d.full_name}</p>
+          <p class="text-xs text-gray-400">${d.city || '—'} • ${d.email}</p>
+        </div>
+      </div>
+      <button onclick="selectDonor(${d.id}, '${d.full_name.replace(/'/g,"\\'")}', '${d.blood_type}')" class="text-xs font-bold text-red-700 hover:text-red-800 underline flex-shrink-0">Select</button>
+    </div>`).join('');
+}
+
+function searchDonors() {
+  clearTimeout(searchTimer);
+  const q = document.getElementById('donor-search-input').value;
+  if (q.length < 2) { document.getElementById('donor-search-results').classList.add('hidden'); return; }
+  searchTimer = setTimeout(async () => {
+    const res = await api.get(`donors.php?search=${encodeURIComponent(q)}&limit=5`);
+    const container = document.getElementById('donor-search-results');
+    container.classList.remove('hidden');
+    if (!res.success || !res.donors?.length) {
+      container.innerHTML = '<p class="text-sm text-gray-400 p-2">No donors found</p>';
+      return;
+    }
+    container.innerHTML = res.donors.map(d => `
+      <button onclick="selectDonor(${d.id}, '${d.full_name.replace(/'/g,"\\'")}', '${d.blood_type}')" class="w-full flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200 hover:bg-red-50 hover:border-red-300 text-left transition-all">
+        <div class="blood-pill text-xs w-8 h-8 flex-shrink-0">${d.blood_type === 'unknown' ? '?' : d.blood_type}</div>
+        <div><p class="font-bold text-sm">${d.full_name}</p><p class="text-xs text-gray-400">${d.email} ${d.blood_type_verified ? '✓' : '(unverified)'}</p></div>
+      </button>`).join('');
+  }, 400);
+}
+
+function selectDonor(id, name, bloodType) {
+  selectedDonorId = id;
+  document.getElementById('sel-donor-name').textContent = name;
+  document.getElementById('sel-donor-info').textContent = `Current blood type: ${bloodType === 'unknown' ? 'Unknown' : bloodType}`;
+  document.getElementById('selected-donor-card').classList.remove('hidden');
+  document.getElementById('donor-search-results').classList.add('hidden');
+  document.getElementById('donor-search-input').value = '';
+  if (bloodType !== 'unknown') {
+    const radio = document.querySelector(`input[name="hw_blood"][value="${bloodType}"]`);
+    if (radio) radio.checked = true;
+  }
+}
+
+function clearSelectedDonor() {
+  selectedDonorId = null;
+  document.getElementById('selected-donor-card').classList.add('hidden');
+}
+
+async function verifyBloodType() {
+  if (!selectedDonorId) { toast('Please select a donor first', 'error'); return; }
+  const bt = document.querySelector('input[name="hw_blood"]:checked')?.value;
+  if (!bt) { toast('Please select the confirmed blood type', 'error'); return; }
+  const btn = document.getElementById('verify-btn');
+  setButtonLoading(btn, true);
+  const res = await api.put(`donors.php?id=${selectedDonorId}&action=verify`, { blood_type: bt });
+  setButtonLoading(btn, false);
+  if (res.success) {
+    toast(`Blood type ${bt} verified for donor! ✓`, 'success');
+    clearSelectedDonor();
+    loadUnverifiedDonors();
+    addToLog(bt);
+  } else toast(res.message, 'error');
+}
+
+function addToLog(bt) {
+  const tbody = document.getElementById('verif-log');
+  if (tbody.querySelector('td[colspan]')) tbody.innerHTML = '';
+  const row = `<tr><td class="font-semibold">—</td><td><div class="blood-pill text-xs w-8 h-8">${bt}</div></td><td><span class="text-green-700 bg-green-100 text-xs font-bold px-2 py-0.5 rounded-full">Verified</span></td><td class="text-sm text-gray-400">Just now</td></tr>`;
+  tbody.insertAdjacentHTML('afterbegin', row);
+}
+</script>
+</body>
+</html>

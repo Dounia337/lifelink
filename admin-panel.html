@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LifeLink - Admin Panel</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="assets/css/styles.css"/>
+</head>
+<body class="bg-[#f6f7f8] min-h-screen">
+<div id="app-navbar"></div>
+
+<div class="flex max-w-[1400px] mx-auto">
+  <!-- Admin Sidebar -->
+  <aside class="sidebar hidden md:flex flex-col">
+    <div class="mb-2 px-2"><p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Admin Panel</p></div>
+    <nav class="space-y-1 mb-6">
+      <button onclick="showSection('overview')" class="sidebar-link active w-full text-left" id="nav-overview"><span class="material-symbols-outlined">dashboard</span>Overview</button>
+      <button onclick="showSection('users')" class="sidebar-link w-full text-left" id="nav-users"><span class="material-symbols-outlined">people</span>Users</button>
+      <button onclick="showSection('hospitals')" class="sidebar-link w-full text-left" id="nav-hospitals"><span class="material-symbols-outlined">local_hospital</span>Hospitals</button>
+      <button onclick="showSection('requests')" class="sidebar-link w-full text-left" id="nav-requests"><span class="material-symbols-outlined">bloodtype</span>Blood Requests</button>
+      <button onclick="showSection('donors')" class="sidebar-link w-full text-left" id="nav-donors"><span class="material-symbols-outlined">volunteer_activism</span>Donors</button>
+    </nav>
+    <div class="mt-auto p-3 bg-red-50 rounded-xl border border-red-200">
+      <p class="text-xs font-bold text-red-900">Admin Access</p>
+      <p class="text-[11px] text-red-700 mt-1" id="admin-name-sidebar">Loading...</p>
+    </div>
+  </aside>
+
+  <main class="flex-1 p-6 lg:p-8">
+
+    <!-- OVERVIEW -->
+    <div id="section-overview">
+      <div class="flex items-center justify-between mb-8">
+        <div><h1 class="text-3xl font-black text-gray-900">System Overview</h1><p class="text-gray-500 mt-1">LifeLink platform statistics and recent activity.</p></div>
+        <button onclick="refreshStats()" class="btn-secondary text-sm"><span class="material-symbols-outlined text-sm">refresh</span> Refresh</button>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="stat-card border-l-4 border-l-red-600"><div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center mb-3"><span class="material-symbols-outlined text-red-700">favorite</span></div><div class="stat-value" id="s-donors">—</div><div class="stat-label">Total Donors</div></div>
+        <div class="stat-card border-l-4 border-l-green-600"><div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center mb-3"><span class="material-symbols-outlined text-green-700">verified</span></div><div class="stat-value" id="s-verified">—</div><div class="stat-label">Verified Donors</div></div>
+        <div class="stat-card border-l-4 border-l-red-700"><div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center mb-3"><span class="material-symbols-outlined text-red-700">local_hospital</span></div><div class="stat-value" id="s-hospitals">—</div><div class="stat-label">Active Hospitals</div></div>
+        <div class="stat-card border-l-4 border-l-orange-500"><div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center mb-3"><span class="material-symbols-outlined text-orange-600">emergency</span></div><div class="stat-value" id="s-open">—</div><div class="stat-label">Open Requests</div></div>
+      </div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="stat-card"><div class="stat-value text-green-600" id="s-fulfilled-today">—</div><div class="stat-label">Fulfilled Today</div></div>
+        <div class="stat-card"><div class="stat-value text-red-700" id="s-rate">—%</div><div class="stat-label">Fulfillment Rate</div></div>
+        <div class="stat-card"><div class="stat-value" id="s-total-donations">—</div><div class="stat-label">Total Donations</div></div>
+        <div class="stat-card"><div class="stat-value text-orange-600" id="s-pending-hospitals">—</div><div class="stat-label">Pending Approvals</div></div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="card">
+        <h2 class="text-lg font-black text-gray-900 mb-4">Recent Blood Requests</h2>
+        <div class="overflow-x-auto">
+          <table class="data-table">
+            <thead><tr><th>#</th><th>Hospital</th><th>Blood Type</th><th>Urgency</th><th>Status</th><th>Created</th><th>Action</th></tr></thead>
+            <tbody id="recent-requests-table"><tr><td colspan="7" class="text-center py-8 text-gray-400">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div id="section-users" class="hidden">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-black text-gray-900">User Management</h1>
+        <div class="flex gap-2">
+          <input id="user-search" onkeyup="searchUsers()" class="form-input text-sm py-2 w-52" placeholder="Search users..."/>
+          <select id="user-role-filter" onchange="loadUsers()" class="form-input text-sm py-2 w-36">
+            <option value="">All Roles</option><option value="donor">Donors</option>
+            <option value="hospital">Hospitals</option><option value="health_worker">Health Workers</option><option value="admin">Admins</option>
+          </select>
+        </div>
+      </div>
+      <div class="card overflow-x-auto">
+        <table class="data-table">
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>City</th><th>Joined</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="users-table"><tr><td colspan="7" class="text-center py-8 text-gray-400">Loading users...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- HOSPITALS -->
+    <div id="section-hospitals" class="hidden">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-black text-gray-900">Hospital Management</h1>
+        <div class="flex gap-2">
+          <button onclick="loadHospitals('pending')" class="btn-secondary text-sm py-2">Pending <span class="bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full ml-1" id="pending-count">0</span></button>
+          <button onclick="loadHospitals('all')" class="btn-blue text-sm py-2">All</button>
+        </div>
+      </div>
+      <div class="card overflow-x-auto">
+        <table class="data-table">
+          <thead><tr><th>Hospital</th><th>Type</th><th>City</th><th>Contact</th><th>Approved</th><th>Action</th></tr></thead>
+          <tbody id="hospitals-table"><tr><td colspan="6" class="text-center py-8 text-gray-400">Loading hospitals...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- REQUESTS -->
+    <div id="section-requests" class="hidden">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-black text-gray-900">All Blood Requests</h1>
+        <select id="req-status-filter" onchange="loadAdminRequests()" class="form-input text-sm py-2 w-40">
+          <option value="">All Status</option>
+          <option value="open">Open</option><option value="matched">Matched</option>
+          <option value="in_progress">In Progress</option><option value="fulfilled">Fulfilled</option><option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="card overflow-x-auto">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Hospital</th><th>Blood</th><th>Units</th><th>Urgency</th><th>Status</th><th>Matches</th><th>Created</th></tr></thead>
+          <tbody id="admin-requests-table"><tr><td colspan="8" class="text-center py-8 text-gray-400">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DONORS -->
+    <div id="section-donors" class="hidden">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-black text-gray-900">Donor Management</h1>
+        <div class="flex gap-2">
+          <select id="donor-bt-filter" onchange="loadDonors()" class="form-input text-sm py-2 w-28">
+            <option value="">All Types</option>
+            <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+            <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+          </select>
+          <select id="donor-verified-filter" onchange="loadDonors()" class="form-input text-sm py-2 w-36">
+            <option value="">All Donors</option><option value="1">Verified Only</option><option value="0">Unverified</option>
+          </select>
+        </div>
+      </div>
+      <div class="card overflow-x-auto">
+        <table class="data-table">
+          <thead><tr><th>Donor</th><th>Blood Type</th><th>City</th><th>Verified</th><th>Donations</th><th>Available</th><th>Action</th></tr></thead>
+          <tbody id="donors-table"><tr><td colspan="7" class="text-center py-8 text-gray-400">Loading donors...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Verify Blood Type Modal -->
+<div id="verify-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl">
+    <h3 class="text-xl font-black mb-4">Verify Blood Type</h3>
+    <p class="text-gray-500 mb-5">Select the confirmed blood type for <strong id="verify-donor-name"></strong>.</p>
+    <div class="grid grid-cols-4 gap-2 mb-5">
+      <label class="blood-option flex items-center justify-center h-12 rounded-xl border-2 border-gray-200 text-sm font-black cursor-pointer hover:border-red-400 transition-all"><input class="hidden" name="v_blood" type="radio" value="A+"/>A+</label>
+      <label class="blood-option flex items-center justify-center h-12 rounded-xl border-2 border-gray-200 text-sm font-black cursor-pointer hover:border-red-400 transition-all"><input class="hidden" name="v_blood" type="radio" value="A-"/>A-</label>
+      <label class="blood-option flex items-center justify-center h-12 rounded-xl border-2 border-gray-200 text-sm font-black cursor-pointer hover:border-red-400 transition-all"><input class="hidden" name="v_blood" type="radio" value="B+"/>B+</label>
+      <label class="blood-option flex items-center justify-center h-12 rounded-xl border-2 border-gray-200 text-sm font-black cursor-pointer hover:border-red-400 transition-all"><input class="hidden" name="v_blood" type="radio" value="B-"/>B-</label>
+      <label class="blood-option flex items-center justify-center h-12 rounded-xl border-2 border-gray-200 text-sm font-black cursor-pointer hover:border-red-400 transition-all"><input class="hidden" name="v_blood" type="radio" value="AB+"/>AB+</label>
+      <label class="blood-option flex items-center justify-center h-12 rounded-xl border-2 border-gray-200 text-sm font-black cursor-pointer hover:border-red-400 transition-all"><input class="hidden" name="v_blood" type="radio" value="AB-"/>AB-</label>
+      <label class="blood-option flex items-center justify-center h-12 rounded-xl border-2 border-gray-200 text-sm font-black cursor-pointer hover:border-red-400 transition-all"><input class="hidden" name="v_blood" type="radio" value="O+"/>O+</label>
+      <label class="blood-option flex items-center justify-center h-12 rounded-xl border-2 border-gray-200 text-sm font-black cursor-pointer hover:border-red-400 transition-all"><input class="hidden" name="v_blood" type="radio" value="O-"/>O-</label>
+    </div>
+    <style>.blood-option:has(input:checked){background:#B71C1C;color:white;border-color:#B71C1C}</style>
+    <div class="flex gap-3">
+      <button id="verify-confirm-btn" onclick="confirmVerify()" class="btn-primary flex-1 justify-center">Confirm Verification</button>
+      <button onclick="document.getElementById('verify-modal').classList.add('hidden')" class="btn-secondary flex-1 justify-center">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/app.js"></script>
+<script>
+let verifyDonorId = null;
+
+(async () => {
+  const user = await initPage(['admin']);
+  if (!user) return;
+  document.getElementById('admin-name-sidebar').textContent = user.full_name;
+  refreshStats();
+  loadUsers();
+})();
+
+async function refreshStats() {
+  const res = await api.get('admin.php?action=stats');
+  if (!res.success) return;
+  const s = res.stats;
+  document.getElementById('s-donors').textContent = s.total_donors;
+  document.getElementById('s-verified').textContent = s.verified_donors;
+  document.getElementById('s-hospitals').textContent = s.total_hospitals;
+  document.getElementById('s-open').textContent = s.open_requests;
+  document.getElementById('s-fulfilled-today').textContent = s.fulfilled_today;
+  document.getElementById('s-rate').textContent = `${s.fulfillment_rate}%`;
+  document.getElementById('s-total-donations').textContent = s.total_donations;
+  document.getElementById('s-pending-hospitals').textContent = s.pending_hospitals;
+  document.getElementById('pending-count').textContent = s.pending_hospitals;
+
+  const tbody = document.getElementById('recent-requests-table');
+  if (s.recent_requests?.length) {
+    tbody.innerHTML = s.recent_requests.map(r => `
+      <tr>
+        <td class="font-bold">#${r.id}</td>
+        <td class="font-semibold">${r.hospital_name}</td>
+        <td><div class="blood-pill text-xs w-8 h-8">${r.blood_type}</div></td>
+        <td><span class="badge-${r.urgency}">${r.urgency}</span></td>
+        <td><span class="status-${r.status}">${r.status}</span></td>
+        <td class="text-sm text-gray-400">${fmt.time(r.created_at)}</td>
+        <td><a href="matching.html?request=${r.id}" class="btn-blue text-xs py-1 px-2">Matches</a></td>
+      </tr>`).join('');
+  }
+}
+
+let userSearchTimer;
+function searchUsers() {
+  clearTimeout(userSearchTimer);
+  userSearchTimer = setTimeout(loadUsers, 400);
+}
+
+async function loadUsers() {
+  const search = document.getElementById('user-search')?.value || '';
+  const role = document.getElementById('user-role-filter')?.value || '';
+  let url = `admin.php?action=users&limit=20${role ? '&role='+role : ''}${search ? '&search='+encodeURIComponent(search) : ''}`;
+  const res = await api.get(url);
+  const tbody = document.getElementById('users-table');
+  if (!res.success || !res.users?.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-400">No users found</td></tr>'; return; }
+  tbody.innerHTML = res.users.map(u => `
+    <tr>
+      <td class="font-bold">${u.full_name}</td>
+      <td class="text-sm text-gray-500">${u.email}</td>
+      <td><span class="text-xs font-bold px-2 py-1 rounded-full ${roleColor(u.role)}">${u.role.replace('_',' ')}</span></td>
+      <td class="text-sm">${u.city || '—'}</td>
+      <td class="text-sm text-gray-400">${fmt.date(u.created_at)}</td>
+      <td><span class="${u.is_active ? 'text-green-700 bg-green-100' : 'text-gray-500 bg-gray-100'} text-xs font-bold px-2 py-0.5 rounded-full">${u.is_active ? 'Active' : 'Inactive'}</span></td>
+      <td>
+        <button onclick="toggleUser(${u.id}, this)" class="text-xs font-bold ${u.is_active ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'} underline">${u.is_active ? 'Deactivate' : 'Activate'}</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function loadHospitals(mode) {
+  const pending = mode === 'pending';
+  const url = `admin.php?action=hospitals${pending ? '&approved=0' : ''}`;
+  const res = await api.get(url);
+  const tbody = document.getElementById('hospitals-table');
+  if (!res.success || !res.hospitals?.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-400">No hospitals found</td></tr>'; return; }
+  tbody.innerHTML = res.hospitals.map(h => `
+    <tr>
+      <td class="font-bold">${h.hospital_name}</td>
+      <td class="text-sm capitalize">${h.hospital_type}</td>
+      <td class="text-sm">${h.city || '—'}</td>
+      <td class="text-sm text-gray-500">${h.email}</td>
+      <td>${h.is_approved ? '<span class="text-green-700 bg-green-100 text-xs font-bold px-2 py-0.5 rounded-full">Approved</span>' : '<span class="text-orange-700 bg-orange-100 text-xs font-bold px-2 py-0.5 rounded-full">Pending</span>'}</td>
+      <td>${!h.is_approved ? `<button onclick="approveHospital(${h.id}, this)" class="btn-blue text-xs py-1.5 px-3">Approve</button>` : '<span class="text-xs text-gray-400">—</span>'}</td>
+    </tr>`).join('');
+}
+
+async function loadAdminRequests() {
+  const status = document.getElementById('req-status-filter').value;
+  const res = await api.get(`requests.php?limit=30${status ? '&status='+status : ''}`);
+  const tbody = document.getElementById('admin-requests-table');
+  if (!res.success || !res.requests?.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-400">No requests found</td></tr>'; return; }
+  tbody.innerHTML = res.requests.map(r => `
+    <tr>
+      <td class="font-bold">#${r.id}</td>
+      <td class="font-semibold text-sm">${r.hospital_name}</td>
+      <td><div class="blood-pill text-xs w-8 h-8">${r.blood_type}</div></td>
+      <td class="font-bold">${r.units_needed}</td>
+      <td><span class="badge-${r.urgency}">${r.urgency}</span></td>
+      <td><span class="status-${r.status}">${r.status}</span></td>
+      <td class="text-sm font-semibold">${r.match_count || 0}</td>
+      <td class="text-xs text-gray-400">${fmt.time(r.created_at)}</td>
+    </tr>`).join('');
+}
+
+async function loadDonors() {
+  const bt = document.getElementById('donor-bt-filter').value;
+  const ver = document.getElementById('donor-verified-filter').value;
+  let url = `donors.php?limit=30${bt ? '&blood_type='+bt : ''}${ver !== '' ? '&verified='+ver : ''}`;
+  const res = await api.get(url);
+  const tbody = document.getElementById('donors-table');
+  if (!res.success || !res.donors?.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-400">No donors found</td></tr>'; return; }
+  tbody.innerHTML = res.donors.map(d => `
+    <tr>
+      <td><div><p class="font-bold">${d.full_name}</p><p class="text-xs text-gray-400">${d.email}</p></div></td>
+      <td><div class="blood-pill text-xs w-8 h-8">${d.blood_type}</div></td>
+      <td class="text-sm">${d.city || '—'}</td>
+      <td>${d.blood_type_verified ? '<span class="material-symbols-outlined text-green-600">verified</span>' : '<span class="text-orange-500 text-xs font-bold">Pending</span>'}</td>
+      <td class="font-bold">${d.total_donations || 0}</td>
+      <td><span class="${d.availability_status === 'available' ? 'text-green-700' : 'text-gray-500'} text-xs font-bold">${d.availability_status}</span></td>
+      <td>
+        ${!d.blood_type_verified ? `<button onclick="openVerifyModal(${d.id}, '${d.full_name.replace(/'/g,"\\'")}')" class="btn-primary text-xs py-1.5 px-3">Verify</button>` : '<span class="text-xs text-gray-400">Verified ✓</span>'}
+      </td>
+    </tr>`).join('');
+}
+
+function showSection(name) {
+  ['overview','users','hospitals','requests','donors'].forEach(s => {
+    document.getElementById(`section-${s}`).classList.toggle('hidden', s !== name);
+    document.getElementById(`nav-${s}`)?.classList.toggle('active', s === name);
+  });
+  if (name === 'users') loadUsers();
+  if (name === 'hospitals') loadHospitals('all');
+  if (name === 'requests') loadAdminRequests();
+  if (name === 'donors') loadDonors();
+}
+
+function roleColor(role) {
+  return { donor: 'bg-red-100 text-red-700', hospital: 'bg-red-100 text-red-800', health_worker: 'bg-purple-100 text-purple-700', admin: 'bg-gray-900 text-white' }[role] || 'bg-gray-100 text-gray-600';
+}
+
+async function approveHospital(hospitalId, btn) {
+  setButtonLoading(btn, true);
+  const res = await api.put('admin.php?action=approve', { hospital_id: hospitalId });
+  setButtonLoading(btn, false);
+  if (res.success) { toast('Hospital approved!', 'success'); loadHospitals('all'); }
+  else toast(res.message, 'error');
+}
+
+async function toggleUser(userId, btn) {
+  const res = await api.put('admin.php?action=toggle_user', { user_id: userId });
+  if (res.success) { toast('User status updated', 'success'); loadUsers(); }
+}
+
+function openVerifyModal(donorId, name) {
+  verifyDonorId = donorId;
+  document.getElementById('verify-donor-name').textContent = name;
+  document.querySelectorAll('input[name="v_blood"]').forEach(r => r.checked = false);
+  document.getElementById('verify-modal').classList.remove('hidden');
+}
+
+async function confirmVerify() {
+  const bt = document.querySelector('input[name="v_blood"]:checked')?.value;
+  if (!bt) { toast('Please select a blood type', 'error'); return; }
+  const btn = document.getElementById('verify-confirm-btn');
+  setButtonLoading(btn, true);
+  const res = await api.put(`donors.php?id=${verifyDonorId}&action=verify`, { blood_type: bt });
+  setButtonLoading(btn, false);
+  if (res.success) {
+    toast(`Blood type ${bt} verified successfully ✓`, 'success');
+    document.getElementById('verify-modal').classList.add('hidden');
+    loadDonors();
+  } else toast(res.message, 'error');
+}
+</script>
+</body>
+</html>

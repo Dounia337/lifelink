@@ -1,0 +1,29 @@
+Options -Indexes
+
+# Enable CORS for API
+<IfModule mod_headers.c>
+    Header always set Access-Control-Allow-Origin "*"
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
+</IfModule>
+
+# PHP error display (disable in production)
+<IfModule mod_php.c>
+    php_flag display_errors Off
+    php_value error_reporting E_ALL
+</IfModule>
+
+# Session security
+<IfModule mod_php.c>
+    php_value session.cookie_httponly 1
+    php_value session.use_strict_mode 1
+</IfModule>
+
+# Protect API config
+<Files "config.php">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Default to index
+DirectoryIndex index.html index.php

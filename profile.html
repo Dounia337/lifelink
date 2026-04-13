@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LifeLink - Profile & Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="assets/css/styles.css"/>
+<style>
+.tab-panel { display: none; } .tab-panel.active { display: block; }
+.profile-tab.active { background: white; color: #B71C1C; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-radius: 8px; }
+</style>
+</head>
+<body class="bg-[#f6f7f8] min-h-screen">
+<div id="app-navbar"></div>
+
+<main class="max-w-5xl mx-auto px-4 py-10">
+  <div class="flex items-center gap-3 mb-8">
+    <button onclick="history.back()" class="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50">
+      <span class="material-symbols-outlined text-gray-600">arrow_back</span>
+    </button>
+    <div>
+      <h1 class="text-2xl font-black text-gray-900">Profile & Settings</h1>
+      <p class="text-gray-500 text-sm">Manage your account information.</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!-- Left: Avatar + Nav -->
+    <div class="lg:col-span-1">
+      <div class="card text-center mb-4">
+        <div class="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-3">
+          <span class="material-symbols-outlined text-red-700 text-4xl">account_circle</span>
+        </div>
+        <h2 class="font-black text-gray-900" id="prof-name">Loading...</h2>
+        <p class="text-sm text-gray-500 capitalize" id="prof-role">—</p>
+        <div class="mt-2 flex justify-center">
+          <div class="blood-pill text-sm" id="prof-blood">?</div>
+        </div>
+        <div id="prof-verified" class="hidden mt-2 flex items-center justify-center gap-1 text-xs font-bold text-green-700">
+          <span class="material-symbols-outlined text-sm">verified</span> Verified Donor
+        </div>
+      </div>
+
+      <div class="card p-2">
+        <div class="flex flex-col gap-1">
+          <button onclick="switchTab('personal')" class="profile-tab active text-left px-4 py-2.5 text-sm font-semibold flex items-center gap-2">
+            <span class="material-symbols-outlined text-sm">person</span> Personal Info
+          </button>
+          <button onclick="switchTab('medical')" id="tab-medical" class="profile-tab text-left px-4 py-2.5 text-sm font-semibold flex items-center gap-2 text-gray-600">
+            <span class="material-symbols-outlined text-sm">bloodtype</span> Medical Info
+          </button>
+          <button onclick="switchTab('security')" class="profile-tab text-left px-4 py-2.5 text-sm font-semibold flex items-center gap-2 text-gray-600">
+            <span class="material-symbols-outlined text-sm">lock</span> Security
+          </button>
+          <button onclick="switchTab('history')" class="profile-tab text-left px-4 py-2.5 text-sm font-semibold flex items-center gap-2 text-gray-600" id="history-tab">
+            <span class="material-symbols-outlined text-sm">history</span> Donation History
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Tab Panels -->
+    <div class="lg:col-span-3 space-y-6">
+
+      <!-- Personal Info -->
+      <div class="tab-panel active" id="panel-personal">
+        <div class="card">
+          <h3 class="text-lg font-black text-gray-900 mb-5">Personal Information</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div class="sm:col-span-2">
+              <label class="form-label">Full Name</label>
+              <input id="p-name" class="form-input" type="text" placeholder="Your full name"/>
+            </div>
+            <div>
+              <label class="form-label">Email</label>
+              <input id="p-email" class="form-input" type="email" placeholder="email@example.com" readonly/>
+            </div>
+            <div>
+              <label class="form-label">Phone</label>
+              <input id="p-phone" class="form-input" type="tel" placeholder="+233 XX XXX XXXX"/>
+            </div>
+            <div>
+              <label class="form-label">City</label>
+              <input id="p-city" class="form-input" type="text" placeholder="Accra, Kumasi..."/>
+            </div>
+            <div>
+              <label class="form-label">Region</label>
+              <select id="p-region" class="form-input">
+                <option value="">Select Region</option>
+                <option>Greater Accra</option><option>Ashanti</option><option>Northern</option>
+                <option>Western</option><option>Eastern</option><option>Central</option>
+                <option>Volta</option><option>Brong-Ahafo</option><option>Upper East</option><option>Upper West</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="form-label">Location / Address</label>
+              <input id="p-location" class="form-input" type="text" placeholder="Full address or neighborhood"/>
+            </div>
+          </div>
+          <div class="flex justify-end mt-6">
+            <button onclick="savePersonal()" class="btn-blue">
+              <span class="material-symbols-outlined text-sm">save</span> Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Medical Info (Donors only) -->
+      <div class="tab-panel" id="panel-medical">
+        <div class="card">
+          <div class="flex items-center justify-between mb-5">
+            <h3 class="text-lg font-black text-gray-900">Medical Information</h3>
+            <div id="verification-status"></div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <label class="form-label">Blood Type</label>
+              <select id="m-blood-type" class="form-input">
+                <option value="unknown">I don't know</option>
+                <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+                <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+              </select>
+              <p class="text-xs text-gray-400 mt-1">Visit a clinic for official verification.</p>
+            </div>
+            <div>
+              <label class="form-label">Date of Birth</label>
+              <input id="m-dob" class="form-input" type="date"/>
+            </div>
+            <div>
+              <label class="form-label">Gender</label>
+              <select id="m-gender" class="form-input">
+                <option value="">Select</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Weight (kg)</label>
+              <input id="m-weight" class="form-input" type="number" placeholder="e.g. 65" min="45" max="200"/>
+            </div>
+            <div>
+              <label class="form-label">Emergency Contact Name</label>
+              <input id="m-ec-name" class="form-input" type="text" placeholder="Next of kin name"/>
+            </div>
+            <div>
+              <label class="form-label">Emergency Contact Phone</label>
+              <input id="m-ec-phone" class="form-input" type="tel" placeholder="+233 XX XXX XXXX"/>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="form-label">Medical Conditions / Notes</label>
+              <textarea id="m-conditions" class="form-input" rows="3" placeholder="Any conditions that may affect eligibility..."></textarea>
+            </div>
+          </div>
+          <div class="mt-6 p-4 bg-red-50 rounded-xl text-sm text-red-800 flex gap-2">
+            <span class="material-symbols-outlined text-sm flex-shrink-0 mt-0.5">info</span>
+            <div>Donors must weigh at least 50kg and be between 18–65 years old. Blood type verification requires a visit to a registered clinic.</div>
+          </div>
+          <div class="flex justify-end mt-4">
+            <button onclick="saveMedical()" class="btn-blue">
+              <span class="material-symbols-outlined text-sm">save</span> Save Medical Info
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security -->
+      <div class="tab-panel" id="panel-security">
+        <div class="card">
+          <h3 class="text-lg font-black text-gray-900 mb-5">Security Settings</h3>
+          <div class="space-y-5">
+            <div>
+              <label class="form-label">Current Password</label>
+              <input id="s-current" class="form-input" type="password" placeholder="Enter current password"/>
+            </div>
+            <div>
+              <label class="form-label">New Password</label>
+              <input id="s-new" class="form-input" type="password" placeholder="Min. 8 characters"/>
+            </div>
+            <div>
+              <label class="form-label">Confirm New Password</label>
+              <input id="s-confirm" class="form-input" type="password" placeholder="Repeat new password"/>
+            </div>
+          </div>
+          <div class="flex justify-between items-center mt-6 pt-4 border-t border-gray-100">
+            <div>
+              <p class="text-sm font-bold text-red-700">Danger Zone</p>
+              <p class="text-xs text-gray-500">Permanent account actions</p>
+            </div>
+            <button onclick="if(confirm('Are you sure you want to deactivate your account?')){auth.logout()}" class="bg-red-50 text-red-700 border border-red-200 text-sm font-bold px-4 py-2 rounded-lg hover:bg-red-100">Deactivate Account</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Donation History -->
+      <div class="tab-panel" id="panel-history">
+        <div class="card">
+          <h3 class="text-lg font-black text-gray-900 mb-5">Donation History</h3>
+          <div id="history-table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Hospital</th>
+                  <th>Blood Type</th>
+                  <th>Units</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="history-tbody">
+                <tr><td colspan="5" class="text-center py-8 text-gray-400">Loading history...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-4 p-4 bg-green-50 rounded-xl flex items-center gap-3" id="lives-counter" style="display:none!important">
+            <span class="material-symbols-outlined text-green-600 text-2xl">volunteer_activism</span>
+            <div>
+              <p class="font-black text-green-800" id="lives-count">0 lives potentially saved</p>
+              <p class="text-xs text-green-600">Each donation can save up to 3 lives</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<script src="assets/js/app.js"></script>
+<script>
+let currentUser = null;
+
+(async () => {
+  currentUser = await initPage();
+  if (!currentUser) return;
+
+  // Fill personal info
+  document.getElementById('prof-name').textContent = currentUser.full_name;
+  document.getElementById('prof-role').textContent = currentUser.role.replace('_', ' ');
+  document.getElementById('p-name').value = currentUser.full_name || '';
+  document.getElementById('p-email').value = currentUser.email || '';
+  document.getElementById('p-phone').value = currentUser.phone || '';
+  document.getElementById('p-city').value = currentUser.city || '';
+  document.getElementById('p-location').value = currentUser.location || '';
+  if (currentUser.region) document.getElementById('p-region').value = currentUser.region;
+
+  // Donor-specific
+  if (currentUser.role === 'donor' && currentUser.donor_profile) {
+    const dp = currentUser.donor_profile;
+    document.getElementById('prof-blood').textContent = dp.blood_type !== 'unknown' ? dp.blood_type : '?';
+    if (dp.blood_type_verified) document.getElementById('prof-verified').classList.remove('hidden');
+
+    document.getElementById('m-blood-type').value = dp.blood_type || 'unknown';
+    document.getElementById('m-dob').value = dp.date_of_birth || '';
+    document.getElementById('m-gender').value = dp.gender || '';
+    document.getElementById('m-weight').value = dp.weight_kg || '';
+    document.getElementById('m-ec-name').value = dp.emergency_contact_name || '';
+    document.getElementById('m-ec-phone').value = dp.emergency_contact_phone || '';
+    document.getElementById('m-conditions').value = dp.medical_conditions || '';
+
+    // Verification badge
+    document.getElementById('verification-status').innerHTML = dp.blood_type_verified
+      ? '<span class="flex items-center gap-1 text-sm font-bold text-green-700 bg-green-100 px-3 py-1 rounded-full"><span class="material-symbols-outlined text-sm">verified</span>Blood Type Verified</span>'
+      : '<span class="text-sm text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full font-semibold">⚠ Not Yet Verified</span>';
+
+    // Load history
+    const histRes = await api.get('donors.php?action=history');
+    const tbody = document.getElementById('history-tbody');
+    if (histRes.success && histRes.history?.length) {
+      tbody.innerHTML = histRes.history.map(h => `
+        <tr>
+          <td class="text-sm">${fmt.date(h.donation_date)}</td>
+          <td class="font-semibold text-sm">${h.hospital_name || '—'}</td>
+          <td><div class="blood-pill text-xs w-8 h-8">${h.blood_type || '?'}</div></td>
+          <td class="font-bold">${h.units_donated || 1}</td>
+          <td><span class="text-xs font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">Donated</span></td>
+        </tr>
+      `).join('');
+      const lives = histRes.history.length * 3;
+      const lc = document.getElementById('lives-counter');
+      lc.style.display = 'flex';
+      document.getElementById('lives-count').textContent = `~${lives} lives potentially saved`;
+    } else {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-400">No donation records yet. Every donation counts!</td></tr>';
+    }
+  } else {
+    // Hide medical tab for non-donors
+    document.getElementById('tab-medical').style.display = 'none';
+    document.getElementById('history-tab').style.display = 'none';
+  }
+})();
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.profile-tab').forEach(b => b.classList.remove('active', 'text-red-700'));
+  document.getElementById(`panel-${tab}`).classList.add('active');
+  document.querySelectorAll('.profile-tab').forEach(b => {
+    if (b.getAttribute('onclick')?.includes(tab)) b.classList.add('active');
+  });
+}
+
+async function savePersonal() {
+  const data = {
+    full_name: document.getElementById('p-name').value,
+    phone: document.getElementById('p-phone').value,
+    city: document.getElementById('p-city').value,
+    region: document.getElementById('p-region').value,
+    location: document.getElementById('p-location').value,
+  };
+  const res = await api.put(`donors.php?id=${currentUser.id}`, data);
+  if (res.success) toast('Personal info saved!', 'success');
+  else toast(res.message || 'Failed to save', 'error');
+}
+
+async function saveMedical() {
+  const data = {
+    blood_type: document.getElementById('m-blood-type').value,
+    date_of_birth: document.getElementById('m-dob').value,
+    gender: document.getElementById('m-gender').value,
+    weight_kg: document.getElementById('m-weight').value,
+    emergency_contact_name: document.getElementById('m-ec-name').value,
+    emergency_contact_phone: document.getElementById('m-ec-phone').value,
+    medical_conditions: document.getElementById('m-conditions').value,
+  };
+  const res = await api.put(`donors.php?id=${currentUser.id}`, data);
+  if (res.success) toast('Medical info saved!', 'success');
+  else toast(res.message || 'Failed to save', 'error');
+}
+</script>
+</body>
+</html>

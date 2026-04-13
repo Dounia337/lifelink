@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LifeLink - Blood Requests</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="assets/css/styles.css"/>
+</head>
+<body class="bg-[#f6f7f8] min-h-screen">
+<div id="app-navbar"></div>
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+    <div>
+      <h1 class="text-3xl font-black text-gray-900">Blood Requests</h1>
+      <p class="text-gray-500 mt-1">All active and recent blood donation requests across Ghana.</p>
+    </div>
+    <div class="flex gap-3">
+      <a href="request-blood.html" class="btn-primary"><span class="material-symbols-outlined">add</span> New Request</a>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card mb-6">
+    <div class="flex flex-wrap gap-4 items-end">
+      <div class="flex-1 min-w-[160px]">
+        <label class="form-label text-xs">Blood Type</label>
+        <select id="filter-blood" onchange="loadRequests()" class="form-input py-2 text-sm">
+          <option value="">All Types</option>
+          <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+          <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+        </select>
+      </div>
+      <div class="flex-1 min-w-[140px]">
+        <label class="form-label text-xs">Urgency</label>
+        <select id="filter-urgency" onchange="loadRequests()" class="form-input py-2 text-sm">
+          <option value="">All Urgency</option>
+          <option value="critical">Critical</option>
+          <option value="urgent">Urgent</option>
+          <option value="standard">Standard</option>
+        </select>
+      </div>
+      <div class="flex-1 min-w-[140px]">
+        <label class="form-label text-xs">Status</label>
+        <select id="filter-status" onchange="loadRequests()" class="form-input py-2 text-sm">
+          <option value="open">Open</option>
+          <option value="matched">Matched</option>
+          <option value="in_progress">In Progress</option>
+          <option value="fulfilled">Fulfilled</option>
+          <option value="">All Status</option>
+        </select>
+      </div>
+      <button onclick="resetFilters()" class="btn-secondary py-2 text-sm">
+        <span class="material-symbols-outlined text-sm">refresh</span> Reset
+      </button>
+    </div>
+  </div>
+
+  <!-- Summary chips -->
+  <div id="summary-chips" class="flex gap-3 flex-wrap mb-6"></div>
+
+  <!-- Cards Grid -->
+  <div id="requests-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+    <div class="col-span-3 text-center py-16 text-gray-400">
+      <span class="material-symbols-outlined text-5xl mb-2 opacity-30">hourglass_empty</span>
+      <p class="font-semibold">Loading requests...</p>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div id="pagination" class="flex justify-center gap-2 mt-10 hidden">
+    <button id="prev-btn" onclick="changePage(-1)" class="btn-secondary py-2 px-4 text-sm">← Previous</button>
+    <span id="page-info" class="flex items-center px-4 text-sm font-semibold text-gray-600"></span>
+    <button id="next-btn" onclick="changePage(1)" class="btn-secondary py-2 px-4 text-sm">Next →</button>
+  </div>
+</main>
+
+<!-- Donate Modal -->
+<div id="donate-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+        <span class="material-symbols-outlined text-red-700 text-2xl">volunteer_activism</span>
+      </div>
+      <div>
+        <h3 class="text-xl font-black text-gray-900">Confirm Donation</h3>
+        <p class="text-gray-500 text-sm" id="modal-subtitle"></p>
+      </div>
+    </div>
+    <div class="bg-gray-50 rounded-xl p-4 mb-6" id="modal-details"></div>
+    <p class="text-sm text-gray-600 mb-6">By confirming, you agree to visit the hospital at the earliest convenience. The hospital staff will be notified of your commitment.</p>
+    <div class="flex gap-3">
+      <button onclick="confirmDonate()" class="btn-primary flex-1 justify-center">
+        <span class="material-symbols-outlined">check</span> I'll Donate
+      </button>
+      <button onclick="closeDonateModal()" class="btn-secondary flex-1 justify-center">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/app.js"></script>
+<script>
+let page = 1;
+const limit = 12;
+let currentUser = null;
+let selectedRequest = null;
+
+(async () => {
+  currentUser = await initPage([], true);
+  loadRequests();
+})();
+
+async function loadRequests() {
+  const blood = document.getElementById('filter-blood').value;
+  const urgency = document.getElementById('filter-urgency').value;
+  const status = document.getElementById('filter-status').value;
+  const offset = (page - 1) * limit;
+
+  let url = `requests.php?limit=${limit}&offset=${offset}`;
+  if (blood) url += `&blood_type=${blood}`;
+  if (urgency) url += `&urgency=${urgency}`;
+  if (status) url += `&status=${status}`;
+
+  const grid = document.getElementById('requests-grid');
+  grid.innerHTML = `<div class="col-span-3 text-center py-16 text-gray-400"><span class="material-symbols-outlined text-5xl mb-2 opacity-30">hourglass_empty</span><p>Loading...</p></div>`;
+
+  const res = await api.get(url);
+
+  if (!res.success || !res.requests?.length) {
+    grid.innerHTML = `<div class="col-span-3 text-center py-16"><div class="empty-state"><span class="material-symbols-outlined">bloodtype</span><p class="font-bold text-gray-600 mt-2">No requests found</p><p class="text-sm mt-1">Try adjusting your filters</p><a href="request-blood.html" class="btn-primary mt-4 inline-flex">Create First Request</a></div></div>`;
+    document.getElementById('pagination').classList.add('hidden');
+    return;
+  }
+
+  // Summary
+  const urgencyCount = {};
+  res.requests.forEach(r => urgencyCount[r.urgency] = (urgencyCount[r.urgency] || 0) + 1);
+  const chips = Object.entries(urgencyCount).map(([u, c]) => `<span class="badge-${u}"><span class="material-symbols-outlined text-xs align-middle">circle</span> ${c} ${u}</span>`).join('');
+  document.getElementById('summary-chips').innerHTML = chips + `<span class="text-sm text-gray-500 self-center ml-2">${res.count} result(s)</span>`;
+
+  grid.innerHTML = res.requests.map(r => requestCard(r)).join('');
+
+  // Pagination
+  if (res.count >= limit) {
+    document.getElementById('pagination').classList.remove('hidden');
+    document.getElementById('page-info').textContent = `Page ${page}`;
+    document.getElementById('prev-btn').disabled = page <= 1;
+    document.getElementById('next-btn').disabled = res.count < limit;
+  }
+}
+
+function requestCard(r) {
+  const urgColors = {
+    critical: 'border-l-red-700 bg-gradient-to-r from-red-50/50',
+    urgent: 'border-l-orange-500 bg-gradient-to-r from-orange-50/50',
+    standard: 'border-l-red-600 bg-gradient-to-r from-red-50/50',
+  };
+  const canDonate = currentUser?.role === 'donor';
+  const canFulfill = currentUser?.role === 'hospital';
+
+  return `
+  <div class="card card-hover border-l-4 ${urgColors[r.urgency] || ''} flex flex-col h-full">
+    <div class="flex items-start justify-between mb-4">
+      <div class="flex items-center gap-3">
+        <div class="blood-pill text-base">${r.blood_type}</div>
+        <div>
+          <p class="font-black text-gray-900 text-sm">${r.hospital_name}</p>
+          <p class="text-xs text-gray-500">${r.location || r.hospital_name}</p>
+        </div>
+      </div>
+      <span class="badge-${r.urgency} flex-shrink-0">${r.urgency}</span>
+    </div>
+    <div class="flex-1 space-y-2 mb-4">
+      <div class="flex items-center gap-2 text-sm text-gray-600">
+        <span class="material-symbols-outlined text-sm">opacity</span>
+        <span><strong>${r.units_needed}</strong> unit(s) needed</span>
+      </div>
+      ${r.reason ? `<div class="flex items-start gap-2 text-sm text-gray-600"><span class="material-symbols-outlined text-sm mt-0.5">info</span><span class="line-clamp-2">${r.reason}</span></div>` : ''}
+      <div class="flex items-center gap-2 text-sm text-gray-600">
+        <span class="material-symbols-outlined text-sm">group</span>
+        <span>${r.match_count || 0} donor(s) matched</span>
+      </div>
+    </div>
+    <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+      <div class="flex items-center gap-2">
+        <span class="status-${r.status}">${r.status.replace('_',' ')}</span>
+        <span class="text-xs text-gray-400">${fmt.time(r.created_at)}</span>
+      </div>
+      ${canDonate && ['open','matched'].includes(r.status) ?
+        `<button onclick="openDonateModal(${JSON.stringify(r).replace(/"/g,'&quot;')})" class="btn-primary text-xs py-2 px-3"><span class="material-symbols-outlined text-xs">favorite</span> Donate</button>` :
+        canFulfill ?
+        `<a href="matching.html?request=${r.id}" class="btn-blue text-xs py-2 px-3">View Matches</a>` :
+        `<a href="login.html" class="btn-secondary text-xs py-2 px-3">Login to Help</a>`
+      }
+    </div>
+  </div>`;
+}
+
+function resetFilters() {
+  document.getElementById('filter-blood').value = '';
+  document.getElementById('filter-urgency').value = '';
+  document.getElementById('filter-status').value = 'open';
+  page = 1;
+  loadRequests();
+}
+
+function changePage(delta) {
+  page = Math.max(1, page + delta);
+  loadRequests();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function openDonateModal(r) {
+  selectedRequest = r;
+  document.getElementById('modal-subtitle').textContent = `${r.hospital_name}`;
+  document.getElementById('modal-details').innerHTML = `
+    <div class="grid grid-cols-2 gap-3 text-sm">
+      <div><span class="text-gray-400 text-xs">Blood Type</span><div class="blood-pill mt-1">${r.blood_type}</div></div>
+      <div><span class="text-gray-400 text-xs">Units Needed</span><p class="font-black text-xl mt-1">${r.units_needed}</p></div>
+      <div><span class="text-gray-400 text-xs">Urgency</span><div class="mt-1"><span class="badge-${r.urgency}">${r.urgency}</span></div></div>
+      <div><span class="text-gray-400 text-xs">Location</span><p class="font-semibold mt-1 text-xs">${r.location || r.hospital_name}</p></div>
+    </div>`;
+  document.getElementById('donate-modal').classList.remove('hidden');
+}
+
+function closeDonateModal() {
+  document.getElementById('donate-modal').classList.add('hidden');
+}
+
+async function confirmDonate() {
+  if (!currentUser) { window.location.href = 'login.html'; return; }
+  toast('Thank you! The hospital has been notified of your commitment.', 'success');
+  closeDonateModal();
+}
+</script>
+</body>
+</html>

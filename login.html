@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LifeLink - Login & Register</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="assets/css/styles.css"/>
+<script>tailwind.config = { theme: { extend: { colors: { "primary": "#B71C1C" } } } }</script>
+<style>
+body { font-family: 'Inter', sans-serif; background: #f6f7f8; }
+.blood-item:has(input:checked) { background: #B71C1C; color: white; border-color: #B71C1C; }
+.tab-active { background: white; color: #B71C1C; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+.panel { display: none; } .panel.active { display: block; }
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<!-- Header -->
+<header class="flex items-center justify-between border-b border-gray-200 bg-white px-6 md:px-20 py-4">
+  <a href="index.html" class="flex items-center gap-3 text-red-700">
+    <div class="bg-red-700 p-1.5 rounded-lg"><span class="material-symbols-outlined text-white text-xl">bloodtype</span></div>
+    <h2 class="text-gray-900 text-xl font-bold">LifeLink</h2>
+  </a>
+</header>
+
+<main class="flex-1 flex items-center justify-center p-4 md:p-8">
+  <div class="max-w-[1100px] w-full grid grid-cols-1 lg:grid-cols-2 gap-0 bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
+    
+    <!-- Left: Branding -->
+    <div class="hidden lg:flex flex-col justify-center p-14 bg-red-700 text-white relative overflow-hidden">
+      <div class="absolute top-0 right-0 -mr-20 -mt-20 opacity-10">
+        <span class="material-symbols-outlined" style="font-size:350px">favorite</span>
+      </div>
+      <div class="relative z-10">
+        <div class="flex items-center gap-2 mb-8">
+          <div class="bg-white/20 p-2 rounded-lg"><span class="material-symbols-outlined text-white text-2xl">bloodtype</span></div>
+          <span class="text-2xl font-black">LifeLink</span>
+        </div>
+        <h1 class="text-4xl font-black leading-tight mb-6">Be a Hero.<br/>Join LifeLink.</h1>
+        <p class="text-base text-white/80 leading-relaxed mb-10">Connect with hospitals and save lives in Ghana. Your data is protected and private.</p>
+        <div class="space-y-5">
+          <div class="flex items-center gap-4"><div class="bg-white/20 p-2 rounded-lg"><span class="material-symbols-outlined">verified_user</span></div><div><h4 class="font-bold">Secure Verification</h4><p class="text-sm opacity-80">Clinic-verified blood types for trust.</p></div></div>
+          <div class="flex items-center gap-4"><div class="bg-white/20 p-2 rounded-lg"><span class="material-symbols-outlined">location_on</span></div><div><h4 class="font-bold">Local Impact</h4><p class="text-sm opacity-80">Find donors within your city instantly.</p></div></div>
+          <div class="flex items-center gap-4"><div class="bg-white/20 p-2 rounded-lg"><span class="material-symbols-outlined">emergency</span></div><div><h4 class="font-bold">Emergency Ready</h4><p class="text-sm opacity-80">Critical alerts sent in under 60 seconds.</p></div></div>
+        </div>
+      </div>
+      <div class="mt-16 text-sm text-white/60">Ashesi University • CS415 Project • Group 3</div>
+    </div>
+
+    <!-- Right: Forms -->
+    <div class="p-6 md:p-12">
+      <div class="max-w-md mx-auto">
+        <!-- Tab Switch -->
+        <div class="flex bg-gray-100 p-1 rounded-xl mb-8">
+          <button id="tab-register" onclick="switchTab('register')" class="flex-1 py-2.5 text-sm font-bold rounded-lg tab-active transition-all">Register</button>
+          <button id="tab-login" onclick="switchTab('login')" class="flex-1 py-2.5 text-sm font-medium text-gray-500 hover:text-red-700 transition-colors">Login</button>
+        </div>
+
+        <!-- REGISTER PANEL -->
+        <div id="panel-register" class="panel active">
+          <h2 class="text-2xl font-bold text-gray-900 mb-1">Create Your Account</h2>
+          <p class="text-gray-500 text-sm mb-6">Fill in your details to start saving lives.</p>
+          
+          <!-- Role selector -->
+          <div class="mb-5">
+            <label class="form-label">I am a...</label>
+            <div class="grid grid-cols-3 gap-2">
+              <label id="role-donor" onclick="setRole('donor')" class="role-btn border-2 border-red-700 bg-red-50 text-red-800 rounded-lg p-3 text-center cursor-pointer">
+                <span class="material-symbols-outlined block text-2xl mb-1">favorite</span>
+                <span class="text-xs font-bold">Donor</span>
+              </label>
+              <label id="role-hospital" onclick="setRole('hospital')" class="role-btn border-2 border-gray-200 text-gray-500 rounded-lg p-3 text-center cursor-pointer hover:border-red-300">
+                <span class="material-symbols-outlined block text-2xl mb-1">local_hospital</span>
+                <span class="text-xs font-bold">Hospital</span>
+              </label>
+              <label id="role-health_worker" onclick="setRole('health_worker')" class="role-btn border-2 border-gray-200 text-gray-500 rounded-lg p-3 text-center cursor-pointer hover:border-red-300">
+                <span class="material-symbols-outlined block text-2xl mb-1">stethoscope</span>
+                <span class="text-xs font-bold">Health Worker</span>
+              </label>
+            </div>
+          </div>
+
+          <form id="register-form" class="space-y-4">
+            <div>
+              <label class="form-label">Full Name *</label>
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">person</span>
+                <input id="reg-name" class="form-input pl-12" placeholder="e.g. Kwame Asante" type="text" required/>
+              </div>
+            </div>
+            <div>
+              <label class="form-label">Email Address *</label>
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">mail</span>
+                <input id="reg-email" class="form-input pl-12" placeholder="email@example.com" type="email" required/>
+              </div>
+            </div>
+            <div>
+              <label class="form-label">Phone Number</label>
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">call</span>
+                <input id="reg-phone" class="form-input pl-12" placeholder="+233 XX XXX XXXX" type="tel"/>
+              </div>
+            </div>
+            <div>
+              <label class="form-label">City / Location</label>
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">location_on</span>
+                <input id="reg-city" class="form-input pl-12" placeholder="Accra, Kumasi, Tamale..." type="text"/>
+              </div>
+            </div>
+            
+            <!-- Donor-specific fields -->
+            <div id="donor-fields">
+              <label class="form-label">Blood Type</label>
+              <div class="grid grid-cols-4 gap-2 mb-2">
+                <label class="blood-item flex items-center justify-center h-10 rounded-lg border border-gray-200 text-xs font-bold cursor-pointer hover:border-red-400 transition-colors"><input class="hidden" name="blood_type" type="radio" value="A+"/> A+</label>
+                <label class="blood-item flex items-center justify-center h-10 rounded-lg border border-gray-200 text-xs font-bold cursor-pointer hover:border-red-400 transition-colors"><input class="hidden" name="blood_type" type="radio" value="A-"/> A-</label>
+                <label class="blood-item flex items-center justify-center h-10 rounded-lg border border-gray-200 text-xs font-bold cursor-pointer hover:border-red-400 transition-colors"><input class="hidden" name="blood_type" type="radio" value="B+"/> B+</label>
+                <label class="blood-item flex items-center justify-center h-10 rounded-lg border border-gray-200 text-xs font-bold cursor-pointer hover:border-red-400 transition-colors"><input class="hidden" name="blood_type" type="radio" value="B-"/> B-</label>
+                <label class="blood-item flex items-center justify-center h-10 rounded-lg border border-gray-200 text-xs font-bold cursor-pointer hover:border-red-400 transition-colors"><input class="hidden" name="blood_type" type="radio" value="AB+"/> AB+</label>
+                <label class="blood-item flex items-center justify-center h-10 rounded-lg border border-gray-200 text-xs font-bold cursor-pointer hover:border-red-400 transition-colors"><input class="hidden" name="blood_type" type="radio" value="AB-"/> AB-</label>
+                <label class="blood-item flex items-center justify-center h-10 rounded-lg border border-gray-200 text-xs font-bold cursor-pointer hover:border-red-400 transition-colors"><input class="hidden" name="blood_type" type="radio" value="O+"/> O+</label>
+                <label class="blood-item flex items-center justify-center h-10 rounded-lg border border-gray-200 text-xs font-bold cursor-pointer hover:border-red-400 transition-colors"><input class="hidden" name="blood_type" type="radio" value="O-"/> O-</label>
+              </div>
+              <label class="blood-item flex items-center justify-center h-10 rounded-lg border border-gray-200 text-xs font-medium cursor-pointer hover:border-red-400 w-full"><input class="hidden" name="blood_type" type="radio" value="unknown"/> I don't know my blood type</label>
+            </div>
+
+            <!-- Hospital fields -->
+            <div id="hospital-fields" class="hidden space-y-4">
+              <div>
+                <label class="form-label">Hospital Name *</label>
+                <input id="reg-hospital-name" class="form-input" placeholder="e.g. Korle Bu Teaching Hospital" type="text"/>
+              </div>
+              <div>
+                <label class="form-label">Registration Number</label>
+                <input id="reg-reg-number" class="form-input" placeholder="GH-HOS-XXXXX" type="text"/>
+              </div>
+              <div>
+                <label class="form-label">Hospital Type</label>
+                <select id="reg-hospital-type" class="form-input">
+                  <option value="public">Public</option>
+                  <option value="private">Private</option>
+                  <option value="clinic">Clinic</option>
+                  <option value="mobile">Mobile Unit</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="form-label">Password *</label>
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">lock</span>
+                <input id="reg-password" class="form-input pl-12 pr-12" placeholder="Min. 8 characters" type="password" required/>
+                <button type="button" onclick="togglePassword('reg-password','eye1')" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                  <span id="eye1" class="material-symbols-outlined">visibility</span>
+                </button>
+              </div>
+            </div>
+
+            <button id="reg-btn" type="button" onclick="handleRegister()" class="w-full bg-red-700 text-white py-4 rounded-xl font-bold text-base hover:bg-red-800 transition-all shadow-lg shadow-red-700/20 flex items-center justify-center gap-2 mt-2">
+              <span>Create Account</span>
+              <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+            <p class="text-center text-xs text-gray-500 pt-2">By joining, you agree to our <a href="#" class="text-red-700 font-semibold">Terms</a> and <a href="#" class="text-red-700 font-semibold">Privacy Policy</a>.</p>
+          </form>
+        </div>
+
+        <!-- LOGIN PANEL -->
+        <div id="panel-login" class="panel">
+          <h2 class="text-2xl font-bold text-gray-900 mb-1">Welcome Back</h2>
+          <p class="text-gray-500 text-sm mb-6">Sign in to your LifeLink account.</p>
+          <form id="login-form" class="space-y-5">
+            <div>
+              <label class="form-label">Email Address</label>
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">mail</span>
+                <input id="login-email" class="form-input pl-12" placeholder="email@example.com" type="email" required/>
+              </div>
+            </div>
+            <div>
+              <label class="form-label">Password</label>
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">lock</span>
+                <input id="login-password" class="form-input pl-12 pr-12" placeholder="Your password" type="password" required/>
+                <button type="button" onclick="togglePassword('login-password','eye2')" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                  <span id="eye2" class="material-symbols-outlined">visibility</span>
+                </button>
+              </div>
+            </div>
+            <button id="login-btn" type="button" onclick="handleLogin()" class="w-full bg-red-700 text-white py-4 rounded-xl font-bold text-base hover:bg-red-800 transition-all shadow-lg shadow-red-700/20 flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined">login</span> Sign In
+            </button>
+          </form>
+        </div>
+
+        <p class="text-center text-sm text-gray-500 mt-6" id="switch-hint">
+          Already have an account? <button onclick="switchTab('login')" class="text-red-700 font-bold hover:underline">Sign in</button>
+        </p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="assets/js/app.js"></script>
+<script>
+let selectedRole = 'donor';
+
+// Pre-fill role from URL
+const urlRole = new URLSearchParams(location.search).get('role');
+if (urlRole) { setTimeout(() => setRole(urlRole), 100); }
+
+// Pre-open login tab if ?tab=login
+if (new URLSearchParams(location.search).get('tab') === 'login') {
+  setTimeout(() => switchTab('login'), 100);
+}
+
+function switchTab(tab) {
+  document.getElementById('panel-register').classList.toggle('active', tab === 'register');
+  document.getElementById('panel-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-register').classList.toggle('tab-active', tab === 'register');
+  document.getElementById('tab-login').classList.toggle('tab-active', tab === 'login');
+  document.getElementById('tab-register').classList.toggle('text-gray-500', tab !== 'register');
+  document.getElementById('tab-login').classList.toggle('text-gray-500', tab !== 'login');
+  document.getElementById('switch-hint').innerHTML = tab === 'register'
+    ? 'Already have an account? <button onclick="switchTab(\'login\')" class="text-red-700 font-bold hover:underline">Sign in</button>'
+    : 'Don\'t have an account? <button onclick="switchTab(\'register\')" class="text-red-700 font-bold hover:underline">Register</button>';
+}
+
+function setRole(role) {
+  selectedRole = role;
+  ['donor','hospital','health_worker'].forEach(r => {
+    const el = document.getElementById(`role-${r}`);
+    el.className = r === role
+      ? 'role-btn border-2 border-red-700 bg-red-50 text-red-800 rounded-lg p-3 text-center cursor-pointer'
+      : 'role-btn border-2 border-gray-200 text-gray-500 rounded-lg p-3 text-center cursor-pointer hover:border-red-300';
+  });
+  document.getElementById('donor-fields').classList.toggle('hidden', role !== 'donor');
+  document.getElementById('hospital-fields').classList.toggle('hidden', role !== 'hospital');
+}
+
+function togglePassword(id, eyeId) {
+  const input = document.getElementById(id);
+  const eye = document.getElementById(eyeId);
+  if (input.type === 'password') { input.type = 'text'; eye.textContent = 'visibility_off'; }
+  else { input.type = 'password'; eye.textContent = 'visibility'; }
+}
+
+async function handleRegister() {
+  const btn = document.getElementById('reg-btn');
+  setButtonLoading(btn, true);
+  const bloodType = document.querySelector('input[name="blood_type"]:checked')?.value || 'unknown';
+  const payload = {
+    full_name: document.getElementById('reg-name').value,
+    email: document.getElementById('reg-email').value,
+    phone: document.getElementById('reg-phone').value,
+    city: document.getElementById('reg-city').value,
+    location: document.getElementById('reg-city').value,
+    password: document.getElementById('reg-password').value,
+    role: selectedRole,
+    blood_type: bloodType,
+    hospital_name: document.getElementById('reg-hospital-name')?.value,
+    registration_number: document.getElementById('reg-reg-number')?.value,
+    hospital_type: document.getElementById('reg-hospital-type')?.value,
+  };
+  const res = await auth.register(payload);
+  setButtonLoading(btn, false);
+  if (res.success) {
+    localStorage.setItem('ll_user', JSON.stringify(res.user));
+    toast('Account created! Welcome to LifeLink.', 'success');
+    setTimeout(() => window.location.href = getDashboardUrl(res.user.role), 1200);
+  } else {
+    toast(res.message || 'Registration failed', 'error');
+  }
+}
+
+async function handleLogin() {
+  const btn = document.getElementById('login-btn');
+  setButtonLoading(btn, true);
+  const res = await auth.login(
+    document.getElementById('login-email').value,
+    document.getElementById('login-password').value
+  );
+  setButtonLoading(btn, false);
+  if (res.success) {
+    localStorage.setItem('ll_user', JSON.stringify(res.user));
+    toast('Welcome back, ' + res.user.full_name.split(' ')[0] + '.', 'success');
+    setTimeout(() => window.location.href = getDashboardUrl(res.user.role), 1000);
+  } else {
+    toast(res.message || 'Login failed', 'error');
+  }
+}
+</script>
+</body>
+</html>
