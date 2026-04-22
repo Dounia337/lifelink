@@ -1,10 +1,9 @@
-// ============================================================
+
 // LifeLink - Shared JavaScript Utilities
-// ============================================================
 
 const API_BASE = './api';
 
-// ---- API Client ----
+// API Client 
 const api = {
     async request(endpoint, options = {}) {
         try {

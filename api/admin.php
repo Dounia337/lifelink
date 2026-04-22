@@ -1,8 +1,7 @@
 <?php
-// ============================================================
+
 // LifeLink - Admin API
 // GET /api/admin.php?action=stats|users|hospitals|approve
-// ============================================================
 require_once __DIR__ . '/config.php';
 startSessionIfNeeded();
 
