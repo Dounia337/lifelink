@@ -22,8 +22,12 @@ switch ($method) {
         createRequest();
         break;
     case 'PUT':
-        if ($id) updateRequest($id);
-        else jsonResponse(false, 'ID required', [], 400);
+        if ($id) {
+            if (isset($_GET['match_id'])) updateMatchStatus($id);
+            else updateRequest($id);
+        } else {
+            jsonResponse(false, 'ID required', [], 400);
+        }
         break;
     default:
         jsonResponse(false, 'Method not allowed', [], 405);
@@ -218,6 +222,42 @@ function updateRequest(int $id): void {
     $stmt->execute($params);
 
     jsonResponse(true, 'Request updated');
+}
+
+function updateMatchStatus(int $requestId): void {
+    $session = requireRole('hospital', 'admin');
+    $db = getDB();
+    $data = getRequestBody();
+    $matchId = isset($_GET['match_id']) ? (int)$_GET['match_id'] : 0;
+    $status = $data['status'] ?? null;
+
+    if (!$matchId || !in_array($status, ['accepted', 'declined'])) {
+        jsonResponse(false, 'Invalid match id or status', [], 422);
+    }
+
+    // Verify match belongs to this request and user owns the request
+    $stmt = $db->prepare("SELECT br.hospital_id FROM blood_requests br JOIN donor_matches dm ON dm.request_id = br.id WHERE br.id = ? AND dm.id = ?");
+    $stmt->execute([$requestId, $matchId]);
+    $owner = $stmt->fetch();
+    if (!$owner) jsonResponse(false, 'Match not found for request', [], 404);
+
+    if ($session['role'] === 'hospital') {
+        $stmt = $db->prepare('SELECT id FROM hospitals WHERE user_id = ? LIMIT 1');
+        $stmt->execute([$session['user_id']]);
+        $hospital = $stmt->fetch();
+        if (!$hospital || $hospital['id'] !== $owner['hospital_id']) {
+            jsonResponse(false, 'Not authorized for this request', [], 403);
+        }
+    }
+
+    $stmt = $db->prepare('UPDATE donor_matches SET status = ?, responded_at = NOW() WHERE id = ?');
+    $stmt->execute([$status, $matchId]);
+
+    if ($status === 'accepted') {
+        $db->prepare("UPDATE blood_requests SET status = 'in_progress' WHERE id = ? AND status NOT IN ('fulfilled','cancelled')")->execute([$requestId]);
+    }
+
+    jsonResponse(true, 'Match status updated');
 }
 
 function runMatching(int $requestId, PDO $db): void {

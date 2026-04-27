@@ -227,13 +227,8 @@ function renderMatches(matches) {
           ${matchStatusBadge(m.status)}
           ${m.id && m.status === 'notified' ? `
             <div class="flex gap-1">
-<<<<<<< HEAD
-              <button onclick="acceptMatch(${i})" class="bg-green-100 text-green-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-green-200">Accept</button>
-              <button onclick="skipMatch(${i})" class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-200">Skip</button>
-=======
-              <button onclick="respondMatch(${m.id},'accepted',this)" class="bg-green-100 text-green-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-green-200">Accept</button>
-              <button onclick="respondMatch(${m.id},'declined',this)" class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-200">Skip</button>
->>>>>>> 7243eda396a36a2b23c3a46e45ab2d16c1e6612a
+              <button onclick="respondMatch(${m.id}, 'accepted', this)" class="bg-green-100 text-green-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-green-200">Accept</button>
+              <button onclick="respondMatch(${m.id}, 'declined', this)" class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-200">Skip</button>
             </div>` : ''}
         </div>
       </div>
@@ -258,28 +253,6 @@ function matchStatusBadge(status) {
     completed: '<span class="text-xs font-bold text-red-800 bg-red-100 px-2 py-1 rounded-full">✓ Completed</span>',
   };
   return map[status] || `<span class="text-xs text-gray-500">${status}</span>`;
-}
-
-function updateMatchStatus(index, newStatus) {
-  const match = allMatches[index];
-  if (!match) return;
-  match.status = newStatus;
-  const filtered = activeFilter === 'all'
-    ? allMatches
-    : activeFilter === 'verified'
-      ? allMatches.filter(m => m.blood_type_verified)
-      : allMatches.filter(m => m.status === 'accepted');
-  renderMatches(filtered);
-  updateStats(allMatches);
-  toast(`Donor ${newStatus === 'accepted' ? 'accepted' : 'declined'}.`, 'success');
-}
-
-function acceptMatch(index) {
-  updateMatchStatus(index, 'accepted');
-}
-
-function skipMatch(index) {
-  updateMatchStatus(index, 'declined');
 }
 
 function updateStats(matches) {
@@ -309,14 +282,14 @@ async function rerunMatching() {
 }
 
 async function respondMatch(matchId, response, btn) {
-  btn.disabled = true;
-  const res = await api.put(`donors.php?id=${matchId}&action=respond`, { response });
+  if (btn) btn.disabled = true;
+  const res = await api.put(`requests.php?id=${requestId}&match_id=${matchId}`, { status: response });
   if (res.success) {
     toast(response === 'accepted' ? 'Donor accepted ✓' : 'Donor skipped', response === 'accepted' ? 'success' : 'info');
     loadRequest();
   } else {
     toast(res.message || 'Failed to update match', 'error');
-    btn.disabled = false;
+    if (btn) btn.disabled = false;
   }
 }
 </script>
