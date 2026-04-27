@@ -123,10 +123,10 @@ let searchTimer = null;
 })();
 
 async function loadStats() {
-  const res = await api.get('donors.php?verified=0&limit=1');
+  const res = await api.get('donors.php?verified=0&limit=100');
   if (res.success) document.getElementById('hw-pending').textContent = res.donors?.length || 0;
-  const res2 = await api.get('donors.php?verified=1&limit=1');
-  if (res2.success) document.getElementById('hw-verified').textContent = res2.donors?.length || '—';
+  const res2 = await api.get('donors.php?verified=1&limit=100');
+  if (res2.success) document.getElementById('hw-verified').textContent = res2.donors?.length || 0;
   document.getElementById('hw-donations').textContent = '—';
 }
 
