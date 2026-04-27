@@ -133,11 +133,12 @@ let currentRequestId = null;
 
   document.getElementById('hospital-name').textContent = currentUser.full_name;
 
-  // Load stats from admin API
-  const statsRes = await api.get('admin.php?action=stats');
+  // Load hospital-specific stats
+  const statsRes = await api.get('requests.php?stats=1');
   if (statsRes.success) {
     const s = statsRes.stats;
     document.getElementById('stat-open').textContent = s.open_requests || 0;
+    document.getElementById('stat-matched').textContent = s.matched_requests || 0;
     document.getElementById('stat-fulfilled').textContent = s.fulfilled_today || 0;
     document.getElementById('stat-rate').textContent = `${s.fulfillment_rate}%`;
   }
@@ -152,16 +153,12 @@ async function loadRequests() {
   const res = await api.get(url);
   const tbody = document.getElementById('requests-table');
 
-  let open = 0, matched = 0;
   if (!res.success || !res.requests?.length) {
     tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-400">No requests found</td></tr>';
     return;
   }
   tbody.innerHTML = res.requests.map(r => {
-    if (r.status === 'open') open++;
-    if (['matched','in_progress'].includes(r.status)) matched++;
     return `
-    <tr>
       <td><div class="blood-pill">${r.blood_type}</div></td>
       <td><span class="font-semibold text-gray-900">${r.patient_name || 'Anonymous'}</span></td>
       <td><span class="font-bold">${r.units_needed}</span></td>

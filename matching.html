@@ -227,8 +227,8 @@ function renderMatches(matches) {
           ${matchStatusBadge(m.status)}
           ${m.status === 'notified' ? `
             <div class="flex gap-1">
-              <button class="bg-green-100 text-green-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-green-200">Accept</button>
-              <button class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-200">Skip</button>
+              <button onclick="acceptMatch(${i})" class="bg-green-100 text-green-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-green-200">Accept</button>
+              <button onclick="skipMatch(${i})" class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-200">Skip</button>
             </div>` : ''}
         </div>
       </div>
@@ -253,6 +253,28 @@ function matchStatusBadge(status) {
     completed: '<span class="text-xs font-bold text-red-800 bg-red-100 px-2 py-1 rounded-full">✓ Completed</span>',
   };
   return map[status] || `<span class="text-xs text-gray-500">${status}</span>`;
+}
+
+function updateMatchStatus(index, newStatus) {
+  const match = allMatches[index];
+  if (!match) return;
+  match.status = newStatus;
+  const filtered = activeFilter === 'all'
+    ? allMatches
+    : activeFilter === 'verified'
+      ? allMatches.filter(m => m.blood_type_verified)
+      : allMatches.filter(m => m.status === 'accepted');
+  renderMatches(filtered);
+  updateStats(allMatches);
+  toast(`Donor ${newStatus === 'accepted' ? 'accepted' : 'declined'}.`, 'success');
+}
+
+function acceptMatch(index) {
+  updateMatchStatus(index, 'accepted');
+}
+
+function skipMatch(index) {
+  updateMatchStatus(index, 'declined');
 }
 
 function updateStats(matches) {
