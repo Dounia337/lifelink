@@ -38,17 +38,53 @@
         <button onclick="refreshStats()" class="btn-secondary text-sm"><span class="material-symbols-outlined text-sm">refresh</span> Refresh</button>
       </div>
 
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div class="stat-card border-l-4 border-l-red-600"><div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center mb-3"><span class="material-symbols-outlined text-red-700">favorite</span></div><div class="stat-value" id="s-donors">—</div><div class="stat-label">Total Donors</div></div>
-        <div class="stat-card border-l-4 border-l-green-600"><div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center mb-3"><span class="material-symbols-outlined text-green-700">verified</span></div><div class="stat-value" id="s-verified">—</div><div class="stat-label">Verified Donors</div></div>
-        <div class="stat-card border-l-4 border-l-red-700"><div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center mb-3"><span class="material-symbols-outlined text-red-700">local_hospital</span></div><div class="stat-value" id="s-hospitals">—</div><div class="stat-label">Active Hospitals</div></div>
-        <div class="stat-card border-l-4 border-l-orange-500"><div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center mb-3"><span class="material-symbols-outlined text-orange-600">emergency</span></div><div class="stat-value" id="s-open">—</div><div class="stat-label">Open Requests</div></div>
+      <!-- Row 1: Donor & Hospital counts -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <div class="stat-card border-l-4 border-l-red-600">
+          <div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center mb-3"><span class="material-symbols-outlined text-red-700">favorite</span></div>
+          <div class="stat-value" id="s-donors">—</div>
+          <div class="stat-label">Total Donors</div>
+        </div>
+        <div class="stat-card border-l-4 border-l-green-600">
+          <div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center mb-3"><span class="material-symbols-outlined text-green-700">verified</span></div>
+          <div class="stat-value" id="s-verified">—</div>
+          <div class="stat-label">Verified Donors</div>
+        </div>
+        <div class="stat-card border-l-4 border-l-red-700">
+          <div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center mb-3"><span class="material-symbols-outlined text-red-700">local_hospital</span></div>
+          <div class="stat-value" id="s-hospitals">—</div>
+          <div class="stat-label">Active Hospitals</div>
+        </div>
+        <div class="stat-card border-l-4 border-l-orange-400">
+          <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center mb-3"><span class="material-symbols-outlined text-orange-500">pending_actions</span></div>
+          <div class="stat-value text-orange-600" id="s-pending-hospitals">—</div>
+          <div class="stat-label">Pending Approvals</div>
+        </div>
       </div>
+      <!-- Row 2: Request & Donation metrics -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div class="stat-card"><div class="stat-value text-green-600" id="s-fulfilled-today">—</div><div class="stat-label">Fulfilled Today</div></div>
-        <div class="stat-card"><div class="stat-value text-red-700" id="s-rate">—%</div><div class="stat-label">Fulfillment Rate</div></div>
-        <div class="stat-card"><div class="stat-value" id="s-total-donations">—</div><div class="stat-label">Total Donations</div></div>
-        <div class="stat-card"><div class="stat-value text-orange-600" id="s-pending-hospitals">—</div><div class="stat-label">Pending Approvals</div></div>
+        <div class="stat-card border-l-4 border-l-orange-500">
+          <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center mb-3"><span class="material-symbols-outlined text-orange-600">emergency</span></div>
+          <div class="stat-value" id="s-open">—</div>
+          <div class="stat-label">Open Requests</div>
+          <div class="text-xs text-gray-400 mt-1">unmatched only · <span id="s-active" class="font-semibold text-gray-600">—</span> total active</div>
+        </div>
+        <div class="stat-card border-l-4 border-l-green-500">
+          <div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center mb-3"><span class="material-symbols-outlined text-green-700">check_circle</span></div>
+          <div class="stat-value text-green-600" id="s-fulfilled-today">—</div>
+          <div class="stat-label">Fulfilled Today</div>
+        </div>
+        <div class="stat-card border-l-4 border-l-red-500">
+          <div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center mb-3"><span class="material-symbols-outlined text-red-700">percent</span></div>
+          <div class="stat-value text-red-700" id="s-rate">—%</div>
+          <div class="stat-label">Fulfillment Rate</div>
+          <div class="text-xs text-gray-400 mt-1">excl. cancelled</div>
+        </div>
+        <div class="stat-card border-l-4 border-l-purple-500">
+          <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center mb-3"><span class="material-symbols-outlined text-purple-600">volunteer_activism</span></div>
+          <div class="stat-value" id="s-total-donations">—</div>
+          <div class="stat-label">Total Donations</div>
+        </div>
       </div>
 
       <!-- Recent Activity -->
@@ -183,15 +219,16 @@ async function refreshStats() {
   const res = await api.get('admin.php?action=stats');
   if (!res.success) return;
   const s = res.stats;
-  document.getElementById('s-donors').textContent = s.total_donors;
-  document.getElementById('s-verified').textContent = s.verified_donors;
-  document.getElementById('s-hospitals').textContent = s.total_hospitals;
-  document.getElementById('s-open').textContent = s.open_requests;
-  document.getElementById('s-fulfilled-today').textContent = s.fulfilled_today;
-  document.getElementById('s-rate').textContent = `${s.fulfillment_rate}%`;
-  document.getElementById('s-total-donations').textContent = s.total_donations;
+  document.getElementById('s-donors').textContent        = s.total_donors;
+  document.getElementById('s-verified').textContent      = s.verified_donors;
+  document.getElementById('s-hospitals').textContent     = s.total_hospitals;
   document.getElementById('s-pending-hospitals').textContent = s.pending_hospitals;
-  document.getElementById('pending-count').textContent = s.pending_hospitals;
+  document.getElementById('s-open').textContent          = s.open_requests;
+  document.getElementById('s-active').textContent        = s.active_requests;
+  document.getElementById('s-fulfilled-today').textContent = s.fulfilled_today;
+  document.getElementById('s-rate').textContent          = `${s.fulfillment_rate}%`;
+  document.getElementById('s-total-donations').textContent = s.total_donations;
+  document.getElementById('pending-count').textContent   = s.pending_hospitals;
 
   const tbody = document.getElementById('recent-requests-table');
   if (s.recent_requests?.length) {
