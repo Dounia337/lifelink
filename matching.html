@@ -225,10 +225,15 @@ function renderMatches(matches) {
         </div>
         <div class="flex flex-col items-end gap-2 flex-shrink-0">
           ${matchStatusBadge(m.status)}
-          ${m.status === 'notified' ? `
+          ${m.id && m.status === 'notified' ? `
             <div class="flex gap-1">
+<<<<<<< HEAD
               <button onclick="acceptMatch(${i})" class="bg-green-100 text-green-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-green-200">Accept</button>
               <button onclick="skipMatch(${i})" class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-200">Skip</button>
+=======
+              <button onclick="respondMatch(${m.id},'accepted',this)" class="bg-green-100 text-green-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-green-200">Accept</button>
+              <button onclick="respondMatch(${m.id},'declined',this)" class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-200">Skip</button>
+>>>>>>> 7243eda396a36a2b23c3a46e45ab2d16c1e6612a
             </div>` : ''}
         </div>
       </div>
@@ -301,6 +306,18 @@ async function rerunMatching() {
   if (!requestId) return;
   toast('Re-running matching algorithm...', 'info');
   setTimeout(() => { loadRequest(); toast('Matching complete!', 'success'); }, 1500);
+}
+
+async function respondMatch(matchId, response, btn) {
+  btn.disabled = true;
+  const res = await api.put(`donors.php?id=${matchId}&action=respond`, { response });
+  if (res.success) {
+    toast(response === 'accepted' ? 'Donor accepted ✓' : 'Donor skipped', response === 'accepted' ? 'success' : 'info');
+    loadRequest();
+  } else {
+    toast(res.message || 'Failed to update match', 'error');
+    btn.disabled = false;
+  }
 }
 </script>
 </body>

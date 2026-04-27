@@ -133,6 +133,7 @@ let currentRequestId = null;
 
   document.getElementById('hospital-name').textContent = currentUser.full_name;
 
+<<<<<<< HEAD
   // Load hospital-specific stats
   const statsRes = await api.get('requests.php?stats=1');
   if (statsRes.success) {
@@ -143,22 +144,34 @@ let currentRequestId = null;
     document.getElementById('stat-rate').textContent = `${s.fulfillment_rate}%`;
   }
 
+=======
+>>>>>>> 7243eda396a36a2b23c3a46e45ab2d16c1e6612a
   loadRequests();
   loadDonors();
 })();
 
 async function loadRequests() {
   const status = document.getElementById('filter-status').value;
-  const url = `requests.php?limit=10${status ? '&status='+status : ''}`;
+  const url = `requests.php?limit=50${status ? '&status='+status : ''}`;
   const res = await api.get(url);
   const tbody = document.getElementById('requests-table');
 
   if (!res.success || !res.requests?.length) {
     tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-400">No requests found</td></tr>';
+    document.getElementById('stat-open').textContent = 0;
+    document.getElementById('stat-matched').textContent = 0;
+    document.getElementById('stat-fulfilled').textContent = 0;
+    document.getElementById('stat-rate').textContent = '0%';
     return;
   }
+<<<<<<< HEAD
   tbody.innerHTML = res.requests.map(r => {
     return `
+=======
+
+  tbody.innerHTML = res.requests.slice(0, 10).map(r => `
+    <tr>
+>>>>>>> 7243eda396a36a2b23c3a46e45ab2d16c1e6612a
       <td><div class="blood-pill">${r.blood_type}</div></td>
       <td><span class="font-semibold text-gray-900">${r.patient_name || 'Anonymous'}</span></td>
       <td><span class="font-bold">${r.units_needed}</span></td>
@@ -172,10 +185,17 @@ async function loadRequests() {
           ${r.status !== 'fulfilled' && r.status !== 'cancelled' ? `<button onclick="openFulfillModal(${r.id}, '${r.blood_type}')" class="bg-green-50 text-green-700 border border-green-200 text-xs py-1.5 px-3 rounded-lg font-bold hover:bg-green-100">Fulfill</button>` : ''}
         </div>
       </td>
-    </tr>`;
-  }).join('');
+    </tr>`).join('');
+
+  const all = res.requests;
+  const open = all.filter(r => r.status === 'open').length;
+  const matched = all.filter(r => ['matched','in_progress'].includes(r.status)).length;
+  const fulfilled = all.filter(r => r.status === 'fulfilled').length;
+  document.getElementById('stat-open').textContent = open;
   document.getElementById('stat-matched').textContent = matched;
-})();
+  document.getElementById('stat-fulfilled').textContent = fulfilled;
+  document.getElementById('stat-rate').textContent = all.length > 0 ? Math.round((fulfilled / all.length) * 100) + '%' : '0%';
+}
 
 async function loadDonors() {
   const res = await api.get('donors.php?availability=available&limit=6&verified=1');
