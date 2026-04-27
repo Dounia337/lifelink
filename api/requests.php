@@ -14,7 +14,9 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
 
 switch ($method) {
     case 'GET':
-        $id ? getSingleRequest($id) : getRequests();
+        if (isset($_GET['stats'])) getRequestStats();
+        elseif ($id) getSingleRequest($id);
+        else getRequests();
         break;
     case 'POST':
         createRequest();
@@ -29,7 +31,7 @@ switch ($method) {
 
 function getRequests(): void {
     $db = getDB();
-    $filters = [];
+    $session = $_SESSION ?? null;
     $params = [];
 
     $status = $_GET['status'] ?? null;
@@ -42,6 +44,19 @@ function getRequests(): void {
     if ($status) { $where[] = 'br.status = ?'; $params[] = $status; }
     if ($blood_type) { $where[] = 'br.blood_type = ?'; $params[] = $blood_type; }
     if ($urgency) { $where[] = 'br.urgency = ?'; $params[] = $urgency; }
+
+    if (!empty($session['role']) && $session['role'] === 'hospital') {
+        $stmt = $db->prepare('SELECT id FROM hospitals WHERE user_id = ? LIMIT 1');
+        $stmt->execute([$session['user_id']]);
+        $hospital = $stmt->fetch();
+        if ($hospital) {
+            $where[] = 'br.hospital_id = ?';
+            $params[] = $hospital['id'];
+        }
+    } elseif (isset($_GET['hospital_id'])) {
+        $where[] = 'br.hospital_id = ?';
+        $params[] = (int)$_GET['hospital_id'];
+    }
 
     $whereStr = implode(' AND ', $where);
     $stmt = $db->prepare("
@@ -66,6 +81,42 @@ function getRequests(): void {
     $requests = $stmt->fetchAll();
 
     jsonResponse(true, 'OK', ['requests' => $requests, 'count' => count($requests)]);
+}
+
+function getRequestStats(): void {
+    $db = getDB();
+    $session = $_SESSION ?? null;
+    $params = [];
+    $where = ['1=1'];
+
+    if (!empty($session['role']) && $session['role'] === 'hospital') {
+        $stmt = $db->prepare('SELECT id FROM hospitals WHERE user_id = ? LIMIT 1');
+        $stmt->execute([$session['user_id']]);
+        $hospital = $stmt->fetch();
+        if ($hospital) {
+            $where[] = 'br.hospital_id = ?';
+            $params[] = $hospital['id'];
+        }
+    } elseif (isset($_GET['hospital_id'])) {
+        $where[] = 'br.hospital_id = ?';
+        $params[] = (int)$_GET['hospital_id'];
+    }
+
+    $whereStr = implode(' AND ', $where);
+    $stmt = $db->prepare("SELECT
+            SUM(br.status = 'open') AS open_requests,
+            SUM(br.status IN ('matched','in_progress')) AS matched_requests,
+            SUM(br.status = 'fulfilled' AND DATE(br.fulfilled_at) = CURDATE()) AS fulfilled_today,
+            SUM(br.status = 'fulfilled') AS total_fulfilled,
+            COUNT(*) AS total_requests
+        FROM blood_requests br
+        WHERE $whereStr
+    ");
+    $stmt->execute($params);
+    $stats = $stmt->fetch();
+    $stats['fulfillment_rate'] = $stats['total_requests'] > 0 ? round(($stats['total_fulfilled'] / $stats['total_requests']) * 100, 1) : 0;
+
+    jsonResponse(true, 'OK', ['stats' => $stats]);
 }
 
 function getSingleRequest(int $id): void {
