@@ -26,23 +26,34 @@ function getStats(): void {
     $stats = [];
 
     $queries = [
+        // Only active (is_active=1) donors
         'total_donors'     => "SELECT COUNT(*) FROM users WHERE role='donor' AND is_active=1",
-        'verified_donors'  => "SELECT COUNT(*) FROM donor_profiles WHERE blood_type_verified=1",
+        // Verified blood type AND the donor account is still active
+        'verified_donors'  => "SELECT COUNT(*) FROM donor_profiles dp
+                               JOIN users u ON u.id = dp.user_id
+                               WHERE dp.blood_type_verified = 1 AND u.is_active = 1",
+        // Approved hospitals only
         'total_hospitals'  => "SELECT COUNT(*) FROM hospitals WHERE is_approved=1",
-        'open_requests'    => "SELECT COUNT(*) FROM blood_requests WHERE status IN ('open','matched','in_progress')",
-        'fulfilled_today'  => "SELECT COUNT(*) FROM blood_requests WHERE status='fulfilled' AND DATE(fulfilled_at)=CURDATE()",
+        // Truly open = not yet matched or actioned
+        'open_requests'    => "SELECT COUNT(*) FROM blood_requests WHERE status = 'open'",
+        // All requests still in flight (open + matched + in_progress)
+        'active_requests'  => "SELECT COUNT(*) FROM blood_requests WHERE status IN ('open','matched','in_progress')",
+        // Fulfilled today using the fulfilled_at timestamp set by the UI
+        'fulfilled_today'  => "SELECT COUNT(*) FROM blood_requests WHERE status='fulfilled' AND DATE(fulfilled_at) = CURDATE()",
+        // Actual rows in donation_records (the ground-truth donation log)
         'total_donations'  => "SELECT COUNT(*) FROM donation_records",
         'pending_hospitals'=> "SELECT COUNT(*) FROM hospitals WHERE is_approved=0",
     ];
 
     foreach ($queries as $key => $sql) {
-        $stats[$key] = $db->query($sql)->fetchColumn();
+        $stats[$key] = (int) $db->query($sql)->fetchColumn();
     }
 
-    // Fulfillment rate
-    $total = $db->query("SELECT COUNT(*) FROM blood_requests")->fetchColumn();
-    $fulfilled = $db->query("SELECT COUNT(*) FROM blood_requests WHERE status='fulfilled'")->fetchColumn();
-    $stats['fulfillment_rate'] = $total > 0 ? round(($fulfilled / $total) * 100, 1) : 0;
+    // Fulfillment rate: exclude cancelled requests from the denominator
+    // so cancelled requests don't unfairly drag the rate down
+    $eligible = $db->query("SELECT COUNT(*) FROM blood_requests WHERE status != 'cancelled'")->fetchColumn();
+    $fulfilled = $db->query("SELECT COUNT(*) FROM blood_requests WHERE status = 'fulfilled'")->fetchColumn();
+    $stats['fulfillment_rate'] = $eligible > 0 ? round(($fulfilled / $eligible) * 100, 1) : 0;
 
     // Recent activity
     $stmt = $db->prepare("

@@ -14,14 +14,20 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
 
 switch ($method) {
     case 'GET':
-        $id ? getSingleRequest($id) : getRequests();
+        if (isset($_GET['stats'])) getRequestStats();
+        elseif ($id) getSingleRequest($id);
+        else getRequests();
         break;
     case 'POST':
         createRequest();
         break;
     case 'PUT':
-        if ($id) updateRequest($id);
-        else jsonResponse(false, 'ID required', [], 400);
+        if ($id) {
+            if (isset($_GET['match_id'])) updateMatchStatus($id);
+            else updateRequest($id);
+        } else {
+            jsonResponse(false, 'ID required', [], 400);
+        }
         break;
     default:
         jsonResponse(false, 'Method not allowed', [], 405);
@@ -29,7 +35,7 @@ switch ($method) {
 
 function getRequests(): void {
     $db = getDB();
-    $filters = [];
+    $session = $_SESSION ?? null;
     $params = [];
 
     $status = $_GET['status'] ?? null;
@@ -42,6 +48,19 @@ function getRequests(): void {
     if ($status) { $where[] = 'br.status = ?'; $params[] = $status; }
     if ($blood_type) { $where[] = 'br.blood_type = ?'; $params[] = $blood_type; }
     if ($urgency) { $where[] = 'br.urgency = ?'; $params[] = $urgency; }
+
+    if (!empty($session['role']) && $session['role'] === 'hospital') {
+        $stmt = $db->prepare('SELECT id FROM hospitals WHERE user_id = ? LIMIT 1');
+        $stmt->execute([$session['user_id']]);
+        $hospital = $stmt->fetch();
+        if ($hospital) {
+            $where[] = 'br.hospital_id = ?';
+            $params[] = $hospital['id'];
+        }
+    } elseif (isset($_GET['hospital_id'])) {
+        $where[] = 'br.hospital_id = ?';
+        $params[] = (int)$_GET['hospital_id'];
+    }
 
     $whereStr = implode(' AND ', $where);
     $stmt = $db->prepare("
@@ -66,6 +85,42 @@ function getRequests(): void {
     $requests = $stmt->fetchAll();
 
     jsonResponse(true, 'OK', ['requests' => $requests, 'count' => count($requests)]);
+}
+
+function getRequestStats(): void {
+    $db = getDB();
+    $session = $_SESSION ?? null;
+    $params = [];
+    $where = ['1=1'];
+
+    if (!empty($session['role']) && $session['role'] === 'hospital') {
+        $stmt = $db->prepare('SELECT id FROM hospitals WHERE user_id = ? LIMIT 1');
+        $stmt->execute([$session['user_id']]);
+        $hospital = $stmt->fetch();
+        if ($hospital) {
+            $where[] = 'br.hospital_id = ?';
+            $params[] = $hospital['id'];
+        }
+    } elseif (isset($_GET['hospital_id'])) {
+        $where[] = 'br.hospital_id = ?';
+        $params[] = (int)$_GET['hospital_id'];
+    }
+
+    $whereStr = implode(' AND ', $where);
+    $stmt = $db->prepare("SELECT
+            SUM(br.status = 'open') AS open_requests,
+            SUM(br.status IN ('matched','in_progress')) AS matched_requests,
+            SUM(br.status = 'fulfilled' AND DATE(br.fulfilled_at) = CURDATE()) AS fulfilled_today,
+            SUM(br.status = 'fulfilled') AS total_fulfilled,
+            COUNT(*) AS total_requests
+        FROM blood_requests br
+        WHERE $whereStr
+    ");
+    $stmt->execute($params);
+    $stats = $stmt->fetch();
+    $stats['fulfillment_rate'] = $stats['total_requests'] > 0 ? round(($stats['total_fulfilled'] / $stats['total_requests']) * 100, 1) : 0;
+
+    jsonResponse(true, 'OK', ['stats' => $stats]);
 }
 
 function getSingleRequest(int $id): void {
@@ -167,6 +222,42 @@ function updateRequest(int $id): void {
     $stmt->execute($params);
 
     jsonResponse(true, 'Request updated');
+}
+
+function updateMatchStatus(int $requestId): void {
+    $session = requireRole('hospital', 'admin');
+    $db = getDB();
+    $data = getRequestBody();
+    $matchId = isset($_GET['match_id']) ? (int)$_GET['match_id'] : 0;
+    $status = $data['status'] ?? null;
+
+    if (!$matchId || !in_array($status, ['accepted', 'declined'])) {
+        jsonResponse(false, 'Invalid match id or status', [], 422);
+    }
+
+    // Verify match belongs to this request and user owns the request
+    $stmt = $db->prepare("SELECT br.hospital_id FROM blood_requests br JOIN donor_matches dm ON dm.request_id = br.id WHERE br.id = ? AND dm.id = ?");
+    $stmt->execute([$requestId, $matchId]);
+    $owner = $stmt->fetch();
+    if (!$owner) jsonResponse(false, 'Match not found for request', [], 404);
+
+    if ($session['role'] === 'hospital') {
+        $stmt = $db->prepare('SELECT id FROM hospitals WHERE user_id = ? LIMIT 1');
+        $stmt->execute([$session['user_id']]);
+        $hospital = $stmt->fetch();
+        if (!$hospital || $hospital['id'] !== $owner['hospital_id']) {
+            jsonResponse(false, 'Not authorized for this request', [], 403);
+        }
+    }
+
+    $stmt = $db->prepare('UPDATE donor_matches SET status = ?, responded_at = NOW() WHERE id = ?');
+    $stmt->execute([$status, $matchId]);
+
+    if ($status === 'accepted') {
+        $db->prepare("UPDATE blood_requests SET status = 'in_progress' WHERE id = ? AND status NOT IN ('fulfilled','cancelled')")->execute([$requestId]);
+    }
+
+    jsonResponse(true, 'Match status updated');
 }
 
 function runMatching(int $requestId, PDO $db): void {

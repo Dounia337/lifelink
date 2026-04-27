@@ -227,8 +227,8 @@ function renderMatches(matches) {
           ${matchStatusBadge(m.status)}
           ${m.id && m.status === 'notified' ? `
             <div class="flex gap-1">
-              <button onclick="respondMatch(${m.id},'accepted',this)" class="bg-green-100 text-green-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-green-200">Accept</button>
-              <button onclick="respondMatch(${m.id},'declined',this)" class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-200">Skip</button>
+              <button onclick="respondMatch(${m.id}, 'accepted', this)" class="bg-green-100 text-green-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-green-200">Accept</button>
+              <button onclick="respondMatch(${m.id}, 'declined', this)" class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-200">Skip</button>
             </div>` : ''}
         </div>
       </div>
@@ -282,14 +282,14 @@ async function rerunMatching() {
 }
 
 async function respondMatch(matchId, response, btn) {
-  btn.disabled = true;
-  const res = await api.put(`donors.php?id=${matchId}&action=respond`, { response });
+  if (btn) btn.disabled = true;
+  const res = await api.put(`requests.php?id=${requestId}&match_id=${matchId}`, { status: response });
   if (res.success) {
     toast(response === 'accepted' ? 'Donor accepted ✓' : 'Donor skipped', response === 'accepted' ? 'success' : 'info');
     loadRequest();
   } else {
     toast(res.message || 'Failed to update match', 'error');
-    btn.disabled = false;
+    if (btn) btn.disabled = false;
   }
 }
 </script>
