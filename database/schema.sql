@@ -157,7 +157,7 @@ INSERT INTO blood_compatibility (donor_type, recipient_type) VALUES
 -- SAMPLE DATA
 -- ============================================================
 
--- Password for all sample users: Password123!
+-- Password for all sample users: password
 -- Hash: $2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi
 
 INSERT INTO users (full_name, email, phone, password_hash, role, location, city, region, latitude, longitude, is_active, is_verified) VALUES
