@@ -133,34 +133,26 @@ let currentRequestId = null;
 
   document.getElementById('hospital-name').textContent = currentUser.full_name;
 
-  // Load stats from admin API
-  const statsRes = await api.get('admin.php?action=stats');
-  if (statsRes.success) {
-    const s = statsRes.stats;
-    document.getElementById('stat-open').textContent = s.open_requests || 0;
-    document.getElementById('stat-fulfilled').textContent = s.fulfilled_today || 0;
-    document.getElementById('stat-rate').textContent = `${s.fulfillment_rate}%`;
-  }
-
   loadRequests();
   loadDonors();
 })();
 
 async function loadRequests() {
   const status = document.getElementById('filter-status').value;
-  const url = `requests.php?limit=10${status ? '&status='+status : ''}`;
+  const url = `requests.php?limit=50${status ? '&status='+status : ''}`;
   const res = await api.get(url);
   const tbody = document.getElementById('requests-table');
 
-  let open = 0, matched = 0;
   if (!res.success || !res.requests?.length) {
     tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-400">No requests found</td></tr>';
+    document.getElementById('stat-open').textContent = 0;
+    document.getElementById('stat-matched').textContent = 0;
+    document.getElementById('stat-fulfilled').textContent = 0;
+    document.getElementById('stat-rate').textContent = '0%';
     return;
   }
-  tbody.innerHTML = res.requests.map(r => {
-    if (r.status === 'open') open++;
-    if (['matched','in_progress'].includes(r.status)) matched++;
-    return `
+
+  tbody.innerHTML = res.requests.slice(0, 10).map(r => `
     <tr>
       <td><div class="blood-pill">${r.blood_type}</div></td>
       <td><span class="font-semibold text-gray-900">${r.patient_name || 'Anonymous'}</span></td>
@@ -175,10 +167,17 @@ async function loadRequests() {
           ${r.status !== 'fulfilled' && r.status !== 'cancelled' ? `<button onclick="openFulfillModal(${r.id}, '${r.blood_type}')" class="bg-green-50 text-green-700 border border-green-200 text-xs py-1.5 px-3 rounded-lg font-bold hover:bg-green-100">Fulfill</button>` : ''}
         </div>
       </td>
-    </tr>`;
-  }).join('');
+    </tr>`).join('');
+
+  const all = res.requests;
+  const open = all.filter(r => r.status === 'open').length;
+  const matched = all.filter(r => ['matched','in_progress'].includes(r.status)).length;
+  const fulfilled = all.filter(r => r.status === 'fulfilled').length;
+  document.getElementById('stat-open').textContent = open;
   document.getElementById('stat-matched').textContent = matched;
-})();
+  document.getElementById('stat-fulfilled').textContent = fulfilled;
+  document.getElementById('stat-rate').textContent = all.length > 0 ? Math.round((fulfilled / all.length) * 100) + '%' : '0%';
+}
 
 async function loadDonors() {
   const res = await api.get('donors.php?availability=available&limit=6&verified=1');
