@@ -133,19 +133,6 @@ let currentRequestId = null;
 
   document.getElementById('hospital-name').textContent = currentUser.full_name;
 
-<<<<<<< HEAD
-  // Load hospital-specific stats
-  const statsRes = await api.get('requests.php?stats=1');
-  if (statsRes.success) {
-    const s = statsRes.stats;
-    document.getElementById('stat-open').textContent = s.open_requests || 0;
-    document.getElementById('stat-matched').textContent = s.matched_requests || 0;
-    document.getElementById('stat-fulfilled').textContent = s.fulfilled_today || 0;
-    document.getElementById('stat-rate').textContent = `${s.fulfillment_rate}%`;
-  }
-
-=======
->>>>>>> 7243eda396a36a2b23c3a46e45ab2d16c1e6612a
   loadRequests();
   loadDonors();
 })();
@@ -164,14 +151,9 @@ async function loadRequests() {
     document.getElementById('stat-rate').textContent = '0%';
     return;
   }
-<<<<<<< HEAD
-  tbody.innerHTML = res.requests.map(r => {
-    return `
-=======
 
   tbody.innerHTML = res.requests.slice(0, 10).map(r => `
     <tr>
->>>>>>> 7243eda396a36a2b23c3a46e45ab2d16c1e6612a
       <td><div class="blood-pill">${r.blood_type}</div></td>
       <td><span class="font-semibold text-gray-900">${r.patient_name || 'Anonymous'}</span></td>
       <td><span class="font-bold">${r.units_needed}</span></td>

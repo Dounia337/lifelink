@@ -140,25 +140,29 @@ function updateDonorProfile(int $id): void {
 
 function verifyBloodType(int $donorId): void {
     $session = requireRole('admin', 'health_worker');
-    $db = getDB();
+    $db   = getDB();
     $data = getRequestBody();
 
     if (empty($data['blood_type'])) jsonResponse(false, 'blood_type required', [], 422);
 
+    // Core action: update the blood type record
     $stmt = $db->prepare("
-        UPDATE donor_profiles SET blood_type = ?, blood_type_verified = 1, verified_by = ?, verified_at = NOW()
+        UPDATE donor_profiles
+        SET blood_type = ?, blood_type_verified = 1, verified_by = ?, verified_at = NOW()
         WHERE user_id = ?
     ");
     $stmt->execute([$data['blood_type'], $session['user_id'], $donorId]);
 
-    // Notify donor
-    $db->prepare("
-        INSERT INTO notifications (user_id, type, title, message)
-        VALUES (?, 'verification', 'Blood Type Verified ✓', ?)
-    ")->execute([$donorId, "Your blood type ({$data['blood_type']}) has been officially verified."]);
-
-    // Set user verified
-    $db->prepare("UPDATE users SET is_verified = 1 WHERE id = ?")->execute([$donorId]);
+    // OBSERVER PATTERN — fire 'blood_type_verified' event.
+    // The notification INSERT and is_verified UPDATE that used to live here
+    // are now inside BloodTypeVerifiedObserver::update().
+    // This function no longer "knows" about notifications at all.
+    $subject = new EventSubject();
+    $subject->addObserver('blood_type_verified', new BloodTypeVerifiedObserver($db));
+    $subject->notifyObservers('blood_type_verified', [
+        'donor_id'   => $donorId,
+        'blood_type' => $data['blood_type'],
+    ]);
 
     jsonResponse(true, 'Blood type verified');
 }

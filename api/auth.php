@@ -37,72 +37,27 @@ function handleRegister(array $data): void {
     }
 
     $email = strtolower(sanitize($data['email']));
-    $role = $data['role'];
-    $allowedRoles = ['donor', 'hospital', 'health_worker'];
-    if (!in_array($role, $allowedRoles)) {
-        jsonResponse(false, 'Invalid role', [], 422);
-    }
+    $role  = $data['role'];
 
-    // Check duplicate
+    // Check duplicate email
     $stmt = $db->prepare("SELECT id FROM users WHERE email = ?");
     $stmt->execute([$email]);
     if ($stmt->fetch()) {
         jsonResponse(false, 'Email already registered', [], 409);
     }
 
-    $passwordHash = password_hash($data['password'], PASSWORD_BCRYPT);
-    $stmt = $db->prepare("
-        INSERT INTO users (full_name, email, phone, password_hash, role, location, city, region, latitude, longitude)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ");
-    $stmt->execute([
-        sanitize($data['full_name']),
-        $email,
-        sanitize($data['phone'] ?? ''),
-        $passwordHash,
-        $role,
-        sanitize($data['location'] ?? ''),
-        sanitize($data['city'] ?? ''),
-        sanitize($data['region'] ?? ''),
-        $data['latitude'] ?? null,
-        $data['longitude'] ?? null,
-    ]);
-    $userId = $db->lastInsertId();
-
-    if ($role === 'donor') {
-        $stmt2 = $db->prepare("
-            INSERT INTO donor_profiles (user_id, blood_type, date_of_birth, gender, weight_kg)
-            VALUES (?, ?, ?, ?, ?)
-        ");
-        $stmt2->execute([
-            $userId,
-            $data['blood_type'] ?? 'unknown',
-            $data['date_of_birth'] ?? null,
-            $data['gender'] ?? null,
-            $data['weight_kg'] ?? null,
-        ]);
-    } elseif ($role === 'hospital') {
-        $stmt2 = $db->prepare("
-            INSERT INTO hospitals (user_id, hospital_name, registration_number, hospital_type, address, city, region, latitude, longitude)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-        $stmt2->execute([
-            $userId,
-            sanitize($data['hospital_name'] ?? $data['full_name']),
-            sanitize($data['registration_number'] ?? ''),
-            $data['hospital_type'] ?? 'public',
-            sanitize($data['address'] ?? $data['location'] ?? ''),
-            sanitize($data['city'] ?? ''),
-            sanitize($data['region'] ?? ''),
-            $data['latitude'] ?? null,
-            $data['longitude'] ?? null,
-        ]);
-    }
+    // FACTORY PATTERN — getCreator() decides which subclass to use based on role.
+    // The if/elseif block that was here (donor → donor_profiles, hospital → hospitals)
+    // is now entirely inside DonorCreator / HospitalCreator / HealthWorkerCreator.
+    // This function no longer needs to know anything about those tables.
+    $creator = UserFactory::getCreator($role, $db);  // returns UserCreator base type
+    $userId  = $creator->createBaseUser($data);       // shared: inserts users row
+    $creator->createProfile($userId, $data);           // role-specific: inserts profile row
 
     // Auto-login
-    $_SESSION['user_id'] = $userId;
-    $_SESSION['role'] = $role;
-    $_SESSION['full_name'] = sanitize($data['full_name']);
+    $_SESSION['user_id']  = $userId;
+    $_SESSION['role']     = $role;
+    $_SESSION['full_name']= sanitize($data['full_name']);
 
     jsonResponse(true, 'Registration successful', [
         'user' => ['id' => $userId, 'role' => $role, 'full_name' => sanitize($data['full_name'])]

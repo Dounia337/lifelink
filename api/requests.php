@@ -267,7 +267,7 @@ function runMatching(int $requestId, PDO $db): void {
     $request = $stmt->fetch();
     if (!$request) return;
 
-    // Find compatible blood types
+    // Find compatible blood types from the compatibility table
     $stmt = $db->prepare("SELECT donor_type FROM blood_compatibility WHERE recipient_type = ?");
     $stmt->execute([$request['blood_type']]);
     $compatibleTypes = array_column($stmt->fetchAll(), 'donor_type');
@@ -293,39 +293,33 @@ function runMatching(int $requestId, PDO $db): void {
     ");
     $stmt->execute(array_merge($compatibleTypes, [$requestId]));
     $donors = $stmt->fetchAll();
-
     if (empty($donors)) return;
 
-    // Calculate distances and insert matches
-    $insertStmt = $db->prepare("
-        INSERT IGNORE INTO donor_matches (request_id, donor_id, distance_km, match_score, status)
-        VALUES (?, ?, ?, ?, 'notified')
-    ");
-    $notifStmt = $db->prepare("
-        INSERT INTO notifications (user_id, type, title, message, related_request_id)
-        VALUES (?, 'emergency_request', ?, ?, ?)
-    ");
-
+    // Calculate distance + score for each donor (pure algorithm, no side effects)
+    $scoredDonors = [];
     foreach ($donors as $donor) {
         $distKm = 999;
         if ($donor['latitude'] && $donor['longitude'] && $request['latitude'] && $request['longitude']) {
             $distKm = haversineDistance(
-                (float)$donor['latitude'], (float)$donor['longitude'],
+                (float)$donor['latitude'],  (float)$donor['longitude'],
                 (float)$request['latitude'], (float)$request['longitude']
             );
         }
-        $score = ($donor['blood_type_verified'] ? 20 : 0) + max(0, 100 - $distKm);
-
-        $insertStmt->execute([$requestId, $donor['id'], $distKm, $score]);
-
-        $urgencyLabel = strtoupper($request['urgency']);
-        $notifStmt->execute([
-            $donor['id'],
-            "[$urgencyLabel] {$request['blood_type']} Blood Needed",
-            "A {$request['blood_type']} donor is urgently needed. Distance: ~{$distKm}km. Please respond ASAP.",
-            $requestId
-        ]);
+        $donor['distance_km'] = $distKm;
+        $donor['match_score'] = ($donor['blood_type_verified'] ? 20 : 0) + max(0, 100 - $distKm);
+        $scoredDonors[] = $donor;
     }
+
+    // OBSERVER PATTERN — fire 'blood_request_created' event.
+    // The donor_matches INSERT and notifications INSERT that used to live
+    // in the loop above are now inside DonorMatchNotificationObserver::update().
+    // runMatching() no longer knows or cares about notifications.
+    $subject = new EventSubject();
+    $subject->addObserver('blood_request_created', new DonorMatchNotificationObserver($db));
+    $subject->notifyObservers('blood_request_created', [
+        'request' => $request,
+        'donors'  => $scoredDonors,
+    ]);
 
     // Update request status to matched
     $db->prepare("UPDATE blood_requests SET status='matched' WHERE id = ? AND status='open'")->execute([$requestId]);

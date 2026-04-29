@@ -21,24 +21,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// PDO Connection
+// Load the three design pattern files
+require_once __DIR__ . '/Database.php';    // Pattern 1: Singleton
+require_once __DIR__ . '/UserFactory.php'; // Pattern 2: Factory
+require_once __DIR__ . '/EventSystem.php'; // Pattern 3: Observer
+
+// getDB() now delegates to the Singleton — one connection, always the same instance
 function getDB(): PDO {
-    static $pdo = null;
-    if ($pdo === null) {
-        try {
-            $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4";
-            $pdo = new PDO($dsn, DB_USER, DB_PASS, [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false,
-            ]);
-        } catch (PDOException $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Database connection failed: ' . $e->getMessage()]);
-            exit();
-        }
-    }
-    return $pdo;
+    return Database::getInstance()->getConnection();
 }
 
 function jsonResponse(bool $success, string $message, array $data = [], int $code = 200): void {
