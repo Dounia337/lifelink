@@ -40,7 +40,6 @@ CREATE TABLE IF NOT EXISTS Users (
 
 -- ============================================================
 -- TABLE 2 — donor_profiles
--- No name conflict — does not exist on the server.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS donor_profiles (
     id                      INT AUTO_INCREMENT PRIMARY KEY,
@@ -65,7 +64,6 @@ CREATE TABLE IF NOT EXISTS donor_profiles (
 
 -- ============================================================
 -- TABLE 3 — hospitals
--- No name conflict — does not exist on the server.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS hospitals (
     id                  INT AUTO_INCREMENT PRIMARY KEY,
@@ -87,7 +85,6 @@ CREATE TABLE IF NOT EXISTS hospitals (
 
 -- ============================================================
 -- TABLE 4 — blood_requests
--- No name conflict — does not exist on the server.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS blood_requests (
     id           INT AUTO_INCREMENT PRIMARY KEY,
