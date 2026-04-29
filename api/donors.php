@@ -62,7 +62,7 @@ function listDonors(): void {
                u.latitude, u.longitude,
                dp.blood_type, dp.blood_type_verified, dp.availability_status,
                dp.total_donations, dp.last_donation_date, dp.is_eligible
-        FROM users u
+        FROM Users u
         JOIN donor_profiles dp ON dp.user_id = u.id
         WHERE $whereStr
         ORDER BY dp.blood_type_verified DESC, u.full_name ASC
@@ -87,7 +87,7 @@ function getDonorProfile(int $id): void {
         SELECT u.id, u.full_name, u.email, u.phone, u.city, u.region, u.location,
                u.is_verified, u.profile_photo, u.created_at,
                dp.*
-        FROM users u
+        FROM Users u
         JOIN donor_profiles dp ON dp.user_id = u.id
         WHERE u.id = ? AND u.role = 'donor'
     ");
@@ -116,7 +116,7 @@ function updateDonorProfile(int $id): void {
     }
     if ($userUpdates) {
         $userParams[] = $id;
-        $db->prepare("UPDATE users SET " . implode(', ', $userUpdates) . " WHERE id = ?")->execute($userParams);
+        $db->prepare("UPDATE Users SET " . implode(', ', $userUpdates) . " WHERE id = ?")->execute($userParams);
     }
 
     // Update donor profile
@@ -214,7 +214,7 @@ function getDonationHistory(): void {
         SELECT dr.*, h.hospital_name, u.full_name as verified_by_name
         FROM donation_records dr
         LEFT JOIN hospitals h ON h.id = dr.hospital_id
-        LEFT JOIN users u ON u.id = dr.verified_by
+        LEFT JOIN Users u ON u.id = dr.verified_by
         WHERE dr.donor_id = ?
         ORDER BY dr.donation_date DESC
     ");

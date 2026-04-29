@@ -4,10 +4,10 @@
 // ============================================================
 
 define('DB_HOST', 'localhost');
-define('DB_USER', 'root');         // Change for production
-define('DB_PASS', '');             // Change for production
-define('DB_NAME', 'lifelink');
-define('APP_URL', 'http://localhost');  // Change for production
+define('DB_USER', 'deubaybe.dounia');
+define('DB_PASS', 'Dou81387');
+define('DB_NAME', 'mobileapps_2026B_deubaybe_dounia');
+define('APP_URL', 'http://localhost');
 define('JWT_SECRET', 'lifelink_secret_key_2025_change_in_prod');
 
 // CORS Headers

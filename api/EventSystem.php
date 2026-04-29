@@ -68,7 +68,7 @@ class BloodTypeVerifiedObserver implements LifeLinkObserver {
         ]);
 
         // Mark the user as verified in the users table
-        $this->db->prepare("UPDATE users SET is_verified = 1 WHERE id = ?")
+        $this->db->prepare("UPDATE Users SET is_verified = 1 WHERE id = ?")
                  ->execute([$data['donor_id']]);
     }
 }

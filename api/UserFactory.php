@@ -26,7 +26,7 @@ abstract class UserCreator {
     // Shared logic — every role creates the same users row
     public function createBaseUser(array $data): int {
         $stmt = $this->db->prepare("
-            INSERT INTO users
+            INSERT INTO Users
                 (full_name, email, phone, password_hash, role,
                  location, city, region, latitude, longitude)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)

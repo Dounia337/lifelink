@@ -70,7 +70,7 @@ function getRequests(): void {
                COUNT(dm.id) as match_count
         FROM blood_requests br
         JOIN hospitals h ON h.id = br.hospital_id
-        JOIN users u ON u.id = br.requested_by
+        JOIN Users u ON u.id = br.requested_by
         LEFT JOIN donor_matches dm ON dm.request_id = br.id AND dm.status NOT IN ('declined','cancelled')
         WHERE $whereStr
         GROUP BY br.id
@@ -130,7 +130,7 @@ function getSingleRequest(int $id): void {
                u.full_name as requested_by_name, u.phone as hospital_phone
         FROM blood_requests br
         JOIN hospitals h ON h.id = br.hospital_id
-        JOIN users u ON u.id = br.requested_by
+        JOIN Users u ON u.id = br.requested_by
         WHERE br.id = ?
     ");
     $stmt->execute([$id]);
@@ -142,7 +142,7 @@ function getSingleRequest(int $id): void {
     $stmt2 = $db->prepare("
         SELECT dm.*, u.full_name as donor_name, dp.blood_type as donor_blood_type, dp.blood_type_verified
         FROM donor_matches dm
-        JOIN users u ON u.id = dm.donor_id
+        JOIN Users u ON u.id = dm.donor_id
         JOIN donor_profiles dp ON dp.user_id = dm.donor_id
         WHERE dm.request_id = ?
     ");
@@ -279,7 +279,7 @@ function runMatching(int $requestId, PDO $db): void {
     $stmt = $db->prepare("
         SELECT u.id, u.latitude, u.longitude, u.full_name,
                dp.blood_type, dp.blood_type_verified
-        FROM users u
+        FROM Users u
         JOIN donor_profiles dp ON dp.user_id = u.id
         WHERE dp.blood_type IN ($placeholders)
           AND dp.is_eligible = 1

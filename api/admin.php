@@ -27,10 +27,10 @@ function getStats(): void {
 
     $queries = [
         // Only active (is_active=1) donors
-        'total_donors'     => "SELECT COUNT(*) FROM users WHERE role='donor' AND is_active=1",
+        'total_donors'     => "SELECT COUNT(*) FROM Users WHERE role='donor' AND is_active=1",
         // Verified blood type AND the donor account is still active
         'verified_donors'  => "SELECT COUNT(*) FROM donor_profiles dp
-                               JOIN users u ON u.id = dp.user_id
+                               JOIN Users u ON u.id = dp.user_id
                                WHERE dp.blood_type_verified = 1 AND u.is_active = 1",
         // Approved hospitals only
         'total_hospitals'  => "SELECT COUNT(*) FROM hospitals WHERE is_approved=1",
@@ -87,7 +87,7 @@ function getUsers(): void {
 
     $stmt = $db->prepare("
         SELECT id, full_name, email, phone, role, city, is_active, is_verified, created_at
-        FROM users
+        FROM Users
         WHERE " . implode(' AND ', $where) . "
         ORDER BY created_at DESC LIMIT ? OFFSET ?
     ");
@@ -109,7 +109,7 @@ function getHospitals(): void {
     $stmt = $db->prepare("
         SELECT h.*, u.full_name, u.email, u.phone, u.is_active
         FROM hospitals h
-        JOIN users u ON u.id = h.user_id
+        JOIN Users u ON u.id = h.user_id
         WHERE " . implode(' AND ', $where) . "
         ORDER BY h.is_approved ASC, h.id DESC
     ");
@@ -125,7 +125,7 @@ function approveHospital(): void {
     if (!$hospitalId) jsonResponse(false, 'hospital_id required', [], 422);
 
     $db->prepare("UPDATE hospitals SET is_approved=1, approved_by=?, approved_at=NOW() WHERE id=?")->execute([$session['user_id'], $hospitalId]);
-    $db->prepare("UPDATE users SET is_verified=1 WHERE id=(SELECT user_id FROM hospitals WHERE id=?)")->execute([$hospitalId]);
+    $db->prepare("UPDATE Users SET is_verified=1 WHERE id=(SELECT user_id FROM hospitals WHERE id=?)")->execute([$hospitalId]);
     jsonResponse(true, 'Hospital approved');
 }
 
@@ -135,7 +135,7 @@ function toggleUser(): void {
     $data = getRequestBody();
     $userId = (int)($data['user_id'] ?? 0);
     if (!$userId || $userId === $session['user_id']) jsonResponse(false, 'Invalid user_id', [], 422);
-    $db->prepare("UPDATE users SET is_active = NOT is_active WHERE id=?")->execute([$userId]);
+    $db->prepare("UPDATE Users SET is_active = NOT is_active WHERE id=?")->execute([$userId]);
     jsonResponse(true, 'User status toggled');
 }
 

@@ -40,7 +40,7 @@ function handleRegister(array $data): void {
     $role  = $data['role'];
 
     // Check duplicate email
-    $stmt = $db->prepare("SELECT id FROM users WHERE email = ?");
+    $stmt = $db->prepare("SELECT id FROM Users WHERE email = ?");
     $stmt->execute([$email]);
     if ($stmt->fetch()) {
         jsonResponse(false, 'Email already registered', [], 409);
@@ -72,7 +72,7 @@ function handleLogin(array $data): void {
     }
 
     $email = strtolower(sanitize($data['email']));
-    $stmt = $db->prepare("SELECT id, full_name, email, password_hash, role, is_active, is_verified FROM users WHERE email = ?");
+    $stmt = $db->prepare("SELECT id, full_name, email, password_hash, role, is_active, is_verified FROM Users WHERE email = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch();
 
@@ -117,7 +117,7 @@ function handleMe(): void {
     $session = requireAuth();
     $db = getDB();
 
-    $stmt = $db->prepare("SELECT id, full_name, email, phone, role, location, city, region, latitude, longitude, is_verified, profile_photo, created_at FROM users WHERE id = ?");
+    $stmt = $db->prepare("SELECT id, full_name, email, phone, role, location, city, region, latitude, longitude, is_verified, profile_photo, created_at FROM Users WHERE id = ?");
     $stmt->execute([$session['user_id']]);
     $user = $stmt->fetch();
 
