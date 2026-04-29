@@ -98,7 +98,9 @@ function getUsers(): void {
 }
 
 function getHospitals(): void {
-    $session = requireRole('admin');
+    // admin: full list with approval controls
+    // health_worker: needs list to attach a hospital when submitting a blood request
+    $session = requireRole('admin', 'health_worker');
     $db = getDB();
 
     $approved = $_GET['approved'] ?? null;

@@ -68,10 +68,23 @@
         </div>
         <div>
           <label class="form-label">Hospital / Facility Name *</label>
-          <div class="relative">
+
+          <!-- Shown for hospital role: pre-filled read-only with their own hospital -->
+          <div class="relative" id="hospital-text-wrapper">
             <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">local_hospital</span>
-            <input id="hospital-name" class="form-input pl-12" placeholder="e.g. Korle Bu Teaching Hospital" type="text" required/>
+            <input id="hospital-name" class="form-input pl-12" placeholder="e.g. Korle Bu Teaching Hospital" type="text"/>
           </div>
+
+          <!-- Shown for admin / health_worker: pick from approved hospitals -->
+          <div class="relative hidden" id="hospital-dropdown-wrapper">
+            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10">local_hospital</span>
+            <select id="hospital-select" class="form-input pl-12" onchange="onHospitalSelect()">
+              <option value="">— Select a hospital —</option>
+            </select>
+          </div>
+
+          <!-- Hidden field that always carries the resolved hospital_id for the payload -->
+          <input type="hidden" id="hospital-id" value=""/>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
@@ -195,35 +208,94 @@
 <script src="assets/js/app.js"></script>
 <script>
 let currentStep = 1;
+let currentUser  = null;
 
-async function checkAuth() {
-  const user = await auth.me();
-  renderNavbar(user);
-  // Public users can also submit requests (for emergency use)
-}
-checkAuth();
+// ── Initialise ────────────────────────────────────────────────
+(async () => {
+  currentUser = await auth.me();
+  renderNavbar(currentUser);
 
-function goToStep(n) {
-  // Validate step 1
-  if (n > 1 && currentStep === 1) {
-    if (!document.getElementById('hospital-name').value.trim()) { toast('Please enter the hospital name', 'error'); return; }
-    if (!document.getElementById('city').value.trim()) { toast('Please enter the city', 'error'); return; }
+  if (!currentUser) return; // unauthenticated users can browse but submit will fail gracefully
+
+  if (currentUser.role === 'hospital') {
+    // Pre-fill their own hospital name (read-only — server derives hospital_id from session)
+    const h = currentUser.hospital;
+    if (h) {
+      const input = document.getElementById('hospital-name');
+      input.value    = h.hospital_name;
+      input.readOnly = true;
+      input.classList.add('bg-gray-50', 'text-gray-500');
+      document.getElementById('hospital-id').value = h.id;
+    }
+
+  } else if (['admin', 'health_worker'].includes(currentUser.role)) {
+    // Show the dropdown, hide the plain text input
+    document.getElementById('hospital-text-wrapper').classList.add('hidden');
+    document.getElementById('hospital-dropdown-wrapper').classList.remove('hidden');
+    await loadHospitalsDropdown();
   }
-  // Validate step 2
+})();
+
+async function loadHospitalsDropdown() {
+  const res = await api.get('admin.php?action=hospitals&approved=1');
+  const sel = document.getElementById('hospital-select');
+  if (!res.success || !res.hospitals?.length) {
+    sel.innerHTML = '<option value="">No approved hospitals found</option>';
+    return;
+  }
+  res.hospitals.forEach(h => {
+    const opt = document.createElement('option');
+    opt.value       = h.id;
+    opt.textContent = `${h.hospital_name} — ${h.city || ''}`;
+    sel.appendChild(opt);
+  });
+}
+
+// When admin/health_worker picks a hospital from the dropdown, sync the
+// hidden hospital-id and the hospital-name field (used in the review step)
+function onHospitalSelect() {
+  const sel = document.getElementById('hospital-select');
+  document.getElementById('hospital-id').value = sel.value;
+  // Keep hospital-name in sync so buildReview() shows the right name
+  const label = sel.options[sel.selectedIndex]?.text?.split(' — ')[0] || '';
+  document.getElementById('hospital-name').value = label;
+}
+
+// ── Step navigation ───────────────────────────────────────────
+function goToStep(n) {
+  if (n > 1 && currentStep === 1) {
+    // For admin/health_worker validate the dropdown; for hospital validate the text field
+    const usingDropdown = !document.getElementById('hospital-dropdown-wrapper').classList.contains('hidden');
+    if (usingDropdown) {
+      if (!document.getElementById('hospital-id').value) {
+        toast('Please select a hospital', 'error'); return;
+      }
+    } else {
+      if (!document.getElementById('hospital-name').value.trim()) {
+        toast('Please enter the hospital name', 'error'); return;
+      }
+    }
+    if (!document.getElementById('city').value.trim()) {
+      toast('Please enter the city', 'error'); return;
+    }
+  }
+
   if (n > 2 && currentStep === 2) {
-    if (!document.querySelector('input[name="blood_type"]:checked')) { toast('Please select a blood type', 'error'); return; }
-    if (!document.querySelector('input[name="urgency"]:checked')) { toast('Please select urgency level', 'error'); return; }
+    if (!document.querySelector('input[name="blood_type"]:checked')) {
+      toast('Please select a blood type', 'error'); return;
+    }
+    if (!document.querySelector('input[name="urgency"]:checked')) {
+      toast('Please select an urgency level', 'error'); return;
+    }
   }
 
   document.getElementById(`step-${currentStep}`).classList.remove('active');
   document.getElementById(`step-${n}`).classList.add('active');
 
-  // Update dots
   for (let i = 1; i <= 3; i++) {
     const dot = document.getElementById(`dot-${i}`);
     dot.className = 'step-dot ' + (i < n ? 'done' : i === n ? 'current' : 'pending');
-    if (i < n) dot.innerHTML = '<span class="material-symbols-outlined text-sm">check</span>';
-    else dot.textContent = i;
+    dot.innerHTML  = i < n ? '<span class="material-symbols-outlined text-sm">check</span>' : String(i);
   }
 
   if (n === 3) buildReview();
@@ -236,39 +308,53 @@ function changeUnits(delta) {
 }
 
 function buildReview() {
-  const bt = document.querySelector('input[name="blood_type"]:checked')?.value || '—';
-  const urg = document.querySelector('input[name="urgency"]:checked')?.value || '—';
+  const bt  = document.querySelector('input[name="blood_type"]:checked')?.value || '—';
+  const urg = document.querySelector('input[name="urgency"]:checked')?.value    || '—';
   document.getElementById('review-content').innerHTML = `
     <div class="grid grid-cols-2 gap-4">
       <div><p class="text-xs font-bold text-gray-400 uppercase mb-1">Patient</p><p class="font-semibold">${document.getElementById('patient-name').value || 'Anonymous'}</p></div>
-      <div><p class="text-xs font-bold text-gray-400 uppercase mb-1">Hospital</p><p class="font-semibold">${document.getElementById('hospital-name').value}</p></div>
+      <div><p class="text-xs font-bold text-gray-400 uppercase mb-1">Hospital</p><p class="font-semibold">${document.getElementById('hospital-name').value || '—'}</p></div>
       <div><p class="text-xs font-bold text-gray-400 uppercase mb-1">Blood Type</p><div class="blood-pill inline-flex text-sm">${bt}</div></div>
       <div><p class="text-xs font-bold text-gray-400 uppercase mb-1">Units</p><p class="font-black text-2xl">${document.getElementById('units').value}</p></div>
       <div><p class="text-xs font-bold text-gray-400 uppercase mb-1">Urgency</p><span class="badge-${urg}">${urg}</span></div>
       <div><p class="text-xs font-bold text-gray-400 uppercase mb-1">Location</p><p class="font-semibold">${document.getElementById('city').value}</p></div>
       ${document.getElementById('reason').value ? `<div class="col-span-2"><p class="text-xs font-bold text-gray-400 uppercase mb-1">Reason</p><p class="text-sm">${document.getElementById('reason').value}</p></div>` : ''}
-    </div>
-  `;
+    </div>`;
 }
 
+// ── Submit ────────────────────────────────────────────────────
 async function submitRequest() {
+  if (!currentUser) {
+    toast('You must be logged in to submit a blood request', 'error'); return;
+  }
+
   const btn = document.getElementById('submit-btn');
   setButtonLoading(btn, true);
 
+  const hospitalId = document.getElementById('hospital-id').value;
   const payload = {
-    patient_name: document.getElementById('patient-name').value || 'Anonymous',
-    location: document.getElementById('hospital-name').value + ', ' + document.getElementById('city').value,
-    ward: document.getElementById('ward').value,
-    reason: document.getElementById('reason').value,
-    blood_type: document.querySelector('input[name="blood_type"]:checked')?.value,
-    units_needed: parseInt(document.getElementById('units').value),
-    urgency: document.querySelector('input[name="urgency"]:checked')?.value,
-    notes: document.getElementById('notes').value,
-    city: document.getElementById('city').value,
-    // Default coords for Accra if not given
-    latitude: 5.6037,
-    longitude: -0.1870,
+    patient_name:  document.getElementById('patient-name').value || 'Anonymous',
+    location:      document.getElementById('hospital-name').value + ', ' + document.getElementById('city').value,
+    ward:          document.getElementById('ward').value,
+    reason:        document.getElementById('reason').value,
+    blood_type:    document.querySelector('input[name="blood_type"]:checked')?.value,
+    units_needed:  parseInt(document.getElementById('units').value),
+    urgency:       document.querySelector('input[name="urgency"]:checked')?.value,
+    notes:         document.getElementById('notes').value,
+    city:          document.getElementById('city').value,
+    latitude:      5.6037,
+    longitude:    -0.1870,
   };
+
+  // Admin and health_worker must send hospital_id — hospital role derives it server-side
+  if (['admin', 'health_worker'].includes(currentUser.role)) {
+    if (!hospitalId) {
+      toast('Please select a hospital first', 'error');
+      setButtonLoading(btn, false);
+      return;
+    }
+    payload.hospital_id = parseInt(hospitalId);
+  }
 
   const res = await api.post('requests.php', payload);
   setButtonLoading(btn, false);

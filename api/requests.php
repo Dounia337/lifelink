@@ -153,7 +153,9 @@ function getSingleRequest(int $id): void {
 }
 
 function createRequest(): void {
-    $session = requireRole('hospital', 'admin');
+    // hospital: creates requests for their own facility (hospital_id derived from session)
+    // admin + health_worker: must select a hospital — hospital_id comes from the form payload
+    $session = requireRole('hospital', 'admin', 'health_worker');
     $db = getDB();
     $data = getRequestBody();
 
@@ -164,7 +166,7 @@ function createRequest(): void {
         }
     }
 
-    // Get hospital id
+    // Resolve hospital_id from session (hospital role) or from the payload (admin/health_worker)
     $hospitalId = null;
     if ($session['role'] === 'hospital') {
         $stmt = $db->prepare("SELECT id FROM hospitals WHERE user_id = ?");
@@ -174,6 +176,15 @@ function createRequest(): void {
         $hospitalId = $hospital['id'];
     } else {
         $hospitalId = (int)($data['hospital_id'] ?? 0);
+        if ($hospitalId <= 0) {
+            jsonResponse(false, 'Please select a hospital before submitting the request', [], 422);
+        }
+        // Confirm the chosen hospital actually exists and is approved
+        $stmt = $db->prepare("SELECT id FROM hospitals WHERE id = ? AND is_approved = 1");
+        $stmt->execute([$hospitalId]);
+        if (!$stmt->fetch()) {
+            jsonResponse(false, 'Selected hospital not found or not approved', [], 404);
+        }
     }
 
     $stmt = $db->prepare("

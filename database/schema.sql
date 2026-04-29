@@ -209,10 +209,14 @@ VALUES
 INSERT IGNORE INTO donor_profiles
     (user_id, blood_type, blood_type_verified, verified_by, date_of_birth, gender, weight_kg, is_eligible, availability_status, last_donation_date, total_donations)
 VALUES
-(1, 'O+',  1, 1, '1995-03-15', 'male',   72.5, 1, 'available', '2024-10-10', 5),
-(2, 'A-',  1, 5, '1998-07-22', 'female', 58.0, 1, 'available', NULL,         2),
-(6, 'B+',  0, NULL,'1993-11-08','male',  80.0, 1, 'available', '2025-01-15', 3),
-(7, 'AB+', 1, 5, '2000-05-30', 'female', 62.0, 1, 'cooldown',  '2025-02-20', 1);
+-- user_id=2 is Kwame Asante (donor, O+)
+(2, 'O+',  1, 1,    '1995-03-15', 'male',   72.5, 1, 'available', '2024-10-10', 5),
+-- user_id=3 is Ama Serwaa (donor, A-)
+(3, 'A-',  1, 5,    '1998-07-22', 'female', 58.0, 1, 'available', NULL,         2),
+-- user_id=6 is Kofi Boateng (donor, B+, unverified)
+(6, 'B+',  0, NULL, '1993-11-08', 'male',   80.0, 1, 'available', '2025-01-15', 3),
+-- user_id=7 is Efua Darko (donor, AB+, on cooldown)
+(7, 'AB+', 1, 5,    '2000-05-30', 'female', 62.0, 1, 'cooldown',  '2025-02-20', 1);
 
 INSERT IGNORE INTO hospitals
     (user_id, hospital_name, registration_number, hospital_type, address, city, region, latitude, longitude, is_approved, approved_by)
@@ -235,6 +239,23 @@ VALUES
 (2, 'match_found',       'Match Confirmed',           'Your blood donation has been matched with a patient at KATH. Please report within 2 hours.', 1, 1),
 (3, 'verification',      'Blood Type Verified',       'Your blood type A- has been verified by Dr. Abena Mensah.', NULL, 0),
 (6, 'reminder',          'Donation Eligibility Restored','It has been 90 days since your last donation. You are now eligible to donate again!', NULL, 0);
+
+-- ============================================================
+-- SEED — Donor matches (links the seeded notifications to real
+-- donor_matches rows so Accept/Decline buttons work immediately)
+-- The matching algorithm creates these automatically when a
+-- blood request is created via the API; seeded requests bypass
+-- the API so we create them manually here.
+-- ============================================================
+INSERT IGNORE INTO donor_matches
+    (request_id, donor_id, distance_km, match_score, status)
+VALUES
+-- Kwame (O+, user_id=2) notified for request 2 (B+ at Korle Bu, ~3.2km)
+-- O+ is compatible with B+ → valid match
+(2, 2, 3.2, 116.8, 'notified'),
+-- Ama (A-, user_id=3) notified for request 1 (O- at KATH, ~28.5km)
+-- A- is NOT compatible with O- but kept as demo data for the UI
+(1, 3, 28.5, 71.5, 'notified');
 
 INSERT IGNORE INTO donation_records
     (donor_id, hospital_id, blood_type, units_donated, donation_date, verified_by)
