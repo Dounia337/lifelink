@@ -23,9 +23,10 @@ switch ($method) {
         else listDonors();
         break;
     case 'PUT':
+        if ($action === 'respond_request') { respondToMatchByRequest(); break; }
         if (!$id) jsonResponse(false, 'ID required', [], 400);
-        if ($action === 'verify') verifyBloodType($id);
-        elseif ($action === 'respond') respondToMatch($id);
+        if ($action === 'verify')        verifyBloodType($id);
+        elseif ($action === 'respond')   respondToMatch($id);
         elseif ($action === 'availability') updateAvailability($id);
         else updateDonorProfile($id);
         break;
@@ -220,6 +221,40 @@ function getDonationHistory(): void {
     ");
     $stmt->execute([$userId]);
     jsonResponse(true, 'OK', ['history' => $stmt->fetchAll()]);
+}
+
+// Donor responds to a request using request_id (from notification).
+// Looks up the donor_matches row automatically — caller only needs request_id.
+function respondToMatchByRequest(): void {
+    $session = requireRole('donor');
+    $db   = getDB();
+    $data = getRequestBody();
+
+    if (!in_array($data['response'] ?? '', ['accepted', 'declined'])) {
+        jsonResponse(false, 'Response must be accepted or declined', [], 422);
+    }
+    $requestId = (int)($data['request_id'] ?? 0);
+    if (!$requestId) jsonResponse(false, 'request_id is required', [], 422);
+
+    // Find this donor's pending match for the given request
+    $stmt = $db->prepare("
+        SELECT * FROM donor_matches
+        WHERE request_id = ? AND donor_id = ? AND status = 'notified'
+    ");
+    $stmt->execute([$requestId, $session['user_id']]);
+    $match = $stmt->fetch();
+
+    if (!$match) jsonResponse(false, 'No pending match found for this request', [], 404);
+
+    $db->prepare("UPDATE donor_matches SET status = ?, responded_at = NOW() WHERE id = ?")
+       ->execute([$data['response'], $match['id']]);
+
+    if ($data['response'] === 'accepted') {
+        $db->prepare("UPDATE blood_requests SET status = 'in_progress' WHERE id = ? AND status NOT IN ('fulfilled','cancelled')")
+           ->execute([$requestId]);
+    }
+
+    jsonResponse(true, 'Response recorded');
 }
 
 function getDonorStats(): void {

@@ -10,20 +10,13 @@ $action = $_GET['action'] ?? '';
 $body = getRequestBody();
 
 switch ($action) {
-    case 'register':
-        handleRegister($body);
-        break;
-    case 'login':
-        handleLogin($body);
-        break;
-    case 'logout':
-        handleLogout();
-        break;
-    case 'me':
-        handleMe();
-        break;
-    default:
-        jsonResponse(false, 'Unknown action', [], 400);
+    case 'register':         handleRegister($body);        break;
+    case 'login':            handleLogin($body);           break;
+    case 'logout':           handleLogout();               break;
+    case 'me':               handleMe();                   break;
+    case 'change_password':  handleChangePassword($body);  break;
+    case 'deactivate':       handleDeactivate($body);      break;
+    default:                 jsonResponse(false, 'Unknown action', [], 400);
 }
 
 function handleRegister(array $data): void {
@@ -111,6 +104,57 @@ function handleLogin(array $data): void {
 function handleLogout(): void {
     session_destroy();
     jsonResponse(true, 'Logged out successfully');
+}
+
+function handleChangePassword(array $data): void {
+    $session = requireAuth();
+    $db = getDB();
+
+    if (empty($data['current_password']) || empty($data['new_password']) || empty($data['confirm_password'])) {
+        jsonResponse(false, 'All three password fields are required', [], 422);
+    }
+    if ($data['new_password'] !== $data['confirm_password']) {
+        jsonResponse(false, 'New passwords do not match', [], 422);
+    }
+    if (strlen($data['new_password']) < 6) {
+        jsonResponse(false, 'New password must be at least 6 characters', [], 422);
+    }
+
+    $stmt = $db->prepare("SELECT password_hash FROM Users WHERE id = ?");
+    $stmt->execute([$session['user_id']]);
+    $user = $stmt->fetch();
+
+    if (!$user || !password_verify($data['current_password'], $user['password_hash'])) {
+        jsonResponse(false, 'Current password is incorrect', [], 401);
+    }
+
+    $db->prepare("UPDATE Users SET password_hash = ? WHERE id = ?")
+       ->execute([password_hash($data['new_password'], PASSWORD_BCRYPT), $session['user_id']]);
+
+    jsonResponse(true, 'Password changed successfully');
+}
+
+function handleDeactivate(array $data): void {
+    $session = requireAuth();
+    $db = getDB();
+
+    if (empty($data['password'])) {
+        jsonResponse(false, 'Password confirmation required', [], 422);
+    }
+
+    $stmt = $db->prepare("SELECT password_hash FROM Users WHERE id = ?");
+    $stmt->execute([$session['user_id']]);
+    $user = $stmt->fetch();
+
+    if (!$user || !password_verify($data['password'], $user['password_hash'])) {
+        jsonResponse(false, 'Incorrect password — account not deactivated', [], 401);
+    }
+
+    $db->prepare("UPDATE Users SET is_active = 0 WHERE id = ?")
+       ->execute([$session['user_id']]);
+
+    session_destroy();
+    jsonResponse(true, 'Account deactivated successfully');
 }
 
 function handleMe(): void {

@@ -233,8 +233,31 @@ function closeDonateModal() {
 
 async function confirmDonate() {
   if (!currentUser) { window.location.href = 'login.html'; return; }
-  toast('Thank you! The hospital has been notified of your commitment.', 'success');
-  closeDonateModal();
+
+  const btn = document.querySelector('#donate-modal button.btn-primary');
+  setButtonLoading(btn, true);
+
+  const res = await api.put('donors.php?action=respond_request', {
+    response: 'accepted',
+    request_id: selectedRequest.id,
+  });
+
+  setButtonLoading(btn, false);
+
+  if (res.success) {
+    toast('Thank you! The hospital has been notified of your commitment.', 'success');
+    closeDonateModal();
+    loadRequests();
+  } else {
+    // No matching match record means this donor wasn't directly matched yet —
+    // still record their interest as a toast so they know to contact the hospital
+    if (res.message && res.message.includes('No pending match')) {
+      toast('Interest noted! Contact the hospital directly if urgent.', 'info');
+      closeDonateModal();
+    } else {
+      toast(res.message || 'Could not register donation. Please try again.', 'error');
+    }
+  }
 }
 </script>
 </body>

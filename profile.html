@@ -170,7 +170,7 @@
       <!-- Security -->
       <div class="tab-panel" id="panel-security">
         <div class="card">
-          <h3 class="text-lg font-black text-gray-900 mb-5">Security Settings</h3>
+          <h3 class="text-lg font-black text-gray-900 mb-5">Change Password</h3>
           <div class="space-y-5">
             <div>
               <label class="form-label">Current Password</label>
@@ -178,19 +178,26 @@
             </div>
             <div>
               <label class="form-label">New Password</label>
-              <input id="s-new" class="form-input" type="password" placeholder="Min. 8 characters"/>
+              <input id="s-new" class="form-input" type="password" placeholder="Min. 6 characters"/>
             </div>
             <div>
               <label class="form-label">Confirm New Password</label>
               <input id="s-confirm" class="form-input" type="password" placeholder="Repeat new password"/>
             </div>
           </div>
+          <div class="flex justify-end mt-5">
+            <button id="save-security-btn" onclick="saveSecurity()" class="btn-blue">
+              <span class="material-symbols-outlined text-sm">lock_reset</span> Update Password
+            </button>
+          </div>
           <div class="flex justify-between items-center mt-6 pt-4 border-t border-gray-100">
             <div>
               <p class="text-sm font-bold text-red-700">Danger Zone</p>
-              <p class="text-xs text-gray-500">Permanent account actions</p>
+              <p class="text-xs text-gray-500">Permanently deactivates your account — requires password confirmation</p>
             </div>
-            <button onclick="if(confirm('Are you sure you want to deactivate your account?')){auth.logout()}" class="bg-red-50 text-red-700 border border-red-200 text-sm font-bold px-4 py-2 rounded-lg hover:bg-red-100">Deactivate Account</button>
+            <button onclick="deactivateAccount()" id="deactivate-btn" class="bg-red-50 text-red-700 border border-red-200 text-sm font-bold px-4 py-2 rounded-lg hover:bg-red-100">
+              Deactivate Account
+            </button>
           </div>
         </div>
       </div>
@@ -215,7 +222,7 @@
               </tbody>
             </table>
           </div>
-          <div class="mt-4 p-4 bg-green-50 rounded-xl flex items-center gap-3" id="lives-counter" style="display:none!important">
+          <div class="mt-4 p-4 bg-green-50 rounded-xl items-center gap-3 hidden" id="lives-counter">
             <span class="material-symbols-outlined text-green-600 text-2xl">volunteer_activism</span>
             <div>
               <p class="font-black text-green-800" id="lives-count">0 lives potentially saved</p>
@@ -281,7 +288,8 @@ let currentUser = null;
       `).join('');
       const lives = histRes.history.length * 3;
       const lc = document.getElementById('lives-counter');
-      lc.style.display = 'flex';
+      lc.classList.remove('hidden');
+      lc.classList.add('flex');
       document.getElementById('lives-count').textContent = `~${lives} lives potentially saved`;
     } else {
       tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-400">No donation records yet. Every donation counts!</td></tr>';
@@ -328,6 +336,58 @@ async function saveMedical() {
   const res = await api.put(`donors.php?id=${currentUser.id}`, data);
   if (res.success) toast('Medical info saved!', 'success');
   else toast(res.message || 'Failed to save', 'error');
+}
+
+async function saveSecurity() {
+  const current  = document.getElementById('s-current').value;
+  const newPw    = document.getElementById('s-new').value;
+  const confirm  = document.getElementById('s-confirm').value;
+
+  if (!current || !newPw || !confirm) {
+    toast('Please fill in all three password fields', 'error'); return;
+  }
+  if (newPw !== confirm) {
+    toast('New passwords do not match', 'error'); return;
+  }
+  if (newPw.length < 6) {
+    toast('New password must be at least 6 characters', 'error'); return;
+  }
+
+  const btn = document.getElementById('save-security-btn');
+  setButtonLoading(btn, true);
+  const res = await api.post('auth.php?action=change_password', {
+    current_password:  current,
+    new_password:      newPw,
+    confirm_password:  confirm,
+  });
+  setButtonLoading(btn, false);
+
+  if (res.success) {
+    toast('Password changed successfully!', 'success');
+    document.getElementById('s-current').value = '';
+    document.getElementById('s-new').value     = '';
+    document.getElementById('s-confirm').value = '';
+  } else {
+    toast(res.message || 'Failed to change password', 'error');
+  }
+}
+
+async function deactivateAccount() {
+  const pw = prompt('Enter your password to confirm account deactivation.\nThis cannot be undone.');
+  if (pw === null) return; // user cancelled
+  if (!pw) { toast('Password is required to deactivate', 'error'); return; }
+
+  const btn = document.getElementById('deactivate-btn');
+  setButtonLoading(btn, true);
+  const res = await api.post('auth.php?action=deactivate', { password: pw });
+  setButtonLoading(btn, false);
+
+  if (res.success) {
+    toast('Account deactivated. You will be logged out now.', 'info', 3000);
+    setTimeout(() => { auth.logout(); }, 3000);
+  } else {
+    toast(res.message || 'Deactivation failed', 'error');
+  }
 }
 </script>
 </body>

@@ -122,6 +122,13 @@ let searchTimer = null;
   loadStats();
 })();
 
+// Single delegated listener replaces all inline onclick="selectDonor(...)" calls.
+// Safer: donor names with backticks, quotes, or special chars cannot break the handler.
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.select-donor-btn');
+  if (btn) selectDonor(btn.dataset.id, btn.dataset.name, btn.dataset.blood);
+});
+
 async function loadStats() {
   const res = await api.get('donors.php?verified=0&limit=100');
   if (res.success) document.getElementById('hw-pending').textContent = res.donors?.length || 0;
@@ -147,7 +154,8 @@ async function loadUnverifiedDonors() {
           <p class="text-xs text-gray-400">${d.city || '—'} • ${d.email}</p>
         </div>
       </div>
-      <button onclick="selectDonor(${d.id}, '${d.full_name.replace(/'/g,"\\'")}', '${d.blood_type}')" class="text-xs font-bold text-red-700 hover:text-red-800 underline flex-shrink-0">Select</button>
+      <button class="select-donor-btn text-xs font-bold text-red-700 hover:text-red-800 underline flex-shrink-0"
+              data-id="${d.id}" data-name="${d.full_name}" data-blood="${d.blood_type}">Select</button>
     </div>`).join('');
 }
 
@@ -164,7 +172,8 @@ function searchDonors() {
       return;
     }
     container.innerHTML = res.donors.map(d => `
-      <button onclick="selectDonor(${d.id}, '${d.full_name.replace(/'/g,"\\'")}', '${d.blood_type}')" class="w-full flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200 hover:bg-red-50 hover:border-red-300 text-left transition-all">
+      <button class="select-donor-btn w-full flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200 hover:bg-red-50 hover:border-red-300 text-left transition-all"
+              data-id="${d.id}" data-name="${d.full_name}" data-blood="${d.blood_type}">
         <div class="blood-pill text-xs w-8 h-8 flex-shrink-0">${d.blood_type === 'unknown' ? '?' : d.blood_type}</div>
         <div><p class="font-bold text-sm">${d.full_name}</p><p class="text-xs text-gray-400">${d.email} ${d.blood_type_verified ? '✓' : '(unverified)'}</p></div>
       </button>`).join('');

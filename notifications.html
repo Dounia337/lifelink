@@ -124,24 +124,26 @@ function renderNotifs() {
   // Attach Accept button handlers after rendering
   document.querySelectorAll('.accept-btn').forEach(btn => {
     btn.addEventListener('click', async function(e) {
-      e.stopPropagation(); // Prevent triggering markRead
-      const requestId = this.getAttribute('data-request-id');
-      const notifId = this.getAttribute('data-notif-id');
+      e.stopPropagation();
+      const requestId = parseInt(this.getAttribute('data-request-id'));
+      const notifId   = parseInt(this.getAttribute('data-notif-id'));
       if (!requestId) return;
+
       btn.disabled = true;
       btn.textContent = 'Accepting...';
-      // Call backend to accept match (respond)
-      const user = await auth.me();
-      if (!user) { toast('Please log in again.', 'error'); return; }
-      const res = await api.put(`donors.php?id=${user.id}&action=respond`, { response: 'accepted', match_id: requestId });
+
+      // respond_request: looks up the donor_match by request_id + session user
+      const res = await api.put('donors.php?action=respond_request', {
+        response: 'accepted',
+        request_id: requestId,
+      });
+
       if (res.success) {
-        toast('You have accepted the request!', 'success');
-        // Optionally mark notification as read and update UI
+        toast('You have accepted the request! Please head to the hospital.', 'success');
         markRead(notifId, btn.closest('.notif-item'));
-        btn.textContent = 'Accepted';
+        btn.textContent = 'Accepted ✓';
         btn.classList.remove('bg-green-600', 'hover:bg-green-700');
-        btn.classList.add('bg-gray-400');
-        btn.disabled = true;
+        btn.classList.add('bg-gray-300', 'text-gray-600');
       } else {
         toast(res.message || 'Failed to accept request', 'error');
         btn.textContent = 'Accept';
