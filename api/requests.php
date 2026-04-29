@@ -38,16 +38,26 @@ function getRequests(): void {
     $session = $_SESSION ?? null;
     $params = [];
 
-    $status = $_GET['status'] ?? null;
+    $status     = $_GET['status']     ?? null;
     $blood_type = $_GET['blood_type'] ?? null;
-    $urgency = $_GET['urgency'] ?? null;
-    $limit = min((int)($_GET['limit'] ?? 20), 100);
+    $urgency    = $_GET['urgency']    ?? null;
+    $limit  = min((int)($_GET['limit']  ?? 20), 100);
     $offset = (int)($_GET['offset'] ?? 0);
 
     $where = ['1=1'];
-    if ($status) { $where[] = 'br.status = ?'; $params[] = $status; }
+
+    // 'active' is a virtual filter meaning open+matched+in_progress —
+    // the statuses a donor can still act on. Any individual status value
+    // (open, matched, in_progress, fulfilled, cancelled) is also accepted.
+    if ($status === 'active') {
+        $where[] = "br.status IN ('open','matched','in_progress')";
+    } elseif ($status) {
+        $where[] = 'br.status = ?';
+        $params[] = $status;
+    }
+
     if ($blood_type) { $where[] = 'br.blood_type = ?'; $params[] = $blood_type; }
-    if ($urgency) { $where[] = 'br.urgency = ?'; $params[] = $urgency; }
+    if ($urgency)    { $where[] = 'br.urgency    = ?'; $params[] = $urgency; }
 
     if (!empty($session['role']) && $session['role'] === 'hospital') {
         $stmt = $db->prepare('SELECT id FROM hospitals WHERE user_id = ? LIMIT 1');
