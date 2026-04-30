@@ -110,7 +110,8 @@ let currentUser = null;
 let selectedRequest = null;
 
 (async () => {
-  currentUser = await initPage([], true);
+  currentUser = await initPage();
+  if (!currentUser) return;
   loadRequests();
 })();
 
