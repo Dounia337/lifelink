@@ -269,9 +269,8 @@ async function handleRegister() {
   const res = await auth.register(payload);
   setButtonLoading(btn, false);
   if (res.success) {
-    localStorage.setItem('ll_user', JSON.stringify(res.user));
-    toast('Account created! Welcome to LifeLink.', 'success');
-    setTimeout(() => window.location.href = getDashboardUrl(res.user.role), 1200);
+    toast('Account created! Please login with your credentials.', 'success');
+    setTimeout(() => window.location.href = 'login.html?tab=login', 1200);
   } else {
     toast(res.message || 'Registration failed', 'error');
   }

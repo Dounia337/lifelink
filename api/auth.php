@@ -47,11 +47,6 @@ function handleRegister(array $data): void {
     $userId  = $creator->createBaseUser($data);       // shared: inserts users row
     $creator->createProfile($userId, $data);           // role-specific: inserts profile row
 
-    // Auto-login
-    $_SESSION['user_id']  = $userId;
-    $_SESSION['role']     = $role;
-    $_SESSION['full_name']= sanitize($data['full_name']);
-
     jsonResponse(true, 'Registration successful', [
         'user' => ['id' => $userId, 'role' => $role, 'full_name' => sanitize($data['full_name'])]
     ], 201);
