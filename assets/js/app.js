@@ -127,6 +127,11 @@ const fmt = {
         if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
         return `${Math.floor(diff / 86400000)}d ago`;
     },
+    mysqlDate(date) {
+        const d = date instanceof Date ? date : new Date(date);
+        if (Number.isNaN(d.getTime())) return null;
+        return d.toISOString().slice(0, 19).replace('T', ' ');
+    },
     urgencyBadge(urgency) {
         const classes = { critical: 'bg-red-600', urgent: 'bg-orange-500', standard: 'bg-blue-500' };
         return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold text-white ${classes[urgency] || 'bg-gray-500'} uppercase tracking-wide">${urgency}</span>`;

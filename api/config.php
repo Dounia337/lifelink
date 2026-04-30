@@ -47,6 +47,15 @@ function sanitize(string $value): string {
     return htmlspecialchars(strip_tags(trim($value)));
 }
 
+function normalizeDateTime(string $value): ?string {
+    try {
+        $dt = new DateTime($value);
+        return $dt->format('Y-m-d H:i:s');
+    } catch (Exception $e) {
+        return null;
+    }
+}
+
 // Simple session-based auth (no JWT needed for PHP)
 function startSessionIfNeeded(): void {
     if (session_status() === PHP_SESSION_NONE) {

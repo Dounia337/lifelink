@@ -227,6 +227,18 @@ function updateRequest(int $id): void {
     $db = getDB();
     $data = getRequestBody();
 
+    if (isset($data['status']) && $data['status'] === 'fulfilled') {
+        if (empty($data['fulfilled_at'])) {
+            $data['fulfilled_at'] = date('Y-m-d H:i:s');
+        } else {
+            $normalized = normalizeDateTime($data['fulfilled_at']);
+            if (!$normalized) {
+                jsonResponse(false, 'Invalid fulfillment timestamp', [], 422);
+            }
+            $data['fulfilled_at'] = $normalized;
+        }
+    }
+
     $allowed = ['status', 'notes', 'fulfilled_at'];
     $updates = [];
     $params = [];

@@ -209,7 +209,8 @@ function closeFulfillModal() {
 }
 async function confirmFulfill() {
   if (!currentRequestId) return;
-  const res = await api.put(`requests.php?id=${currentRequestId}`, { status: 'fulfilled', fulfilled_at: new Date().toISOString() });
+  const fulfilledAt = fmt.mysqlDate(new Date());
+  const res = await api.put(`requests.php?id=${currentRequestId}`, { status: 'fulfilled', fulfilled_at: fulfilledAt });
   if (res.success) {
     toast('Request marked as fulfilled ✓', 'success');
     closeFulfillModal();
