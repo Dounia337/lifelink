@@ -11,6 +11,23 @@ function serverRequiredMessage() {
     return 'App must be served through a web server (e.g. http://localhost/lifelink), not opened directly from file://.';
 }
 
+function showServerWarning() {
+    if (document.getElementById('server-warning-overlay')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'server-warning-overlay';
+    overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px;`; 
+    overlay.innerHTML = `
+        <div style="max-width:520px;width:100%;background:#fff;border-radius:24px;padding:32px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,0.25);">
+            <div style="font-size:48px;margin-bottom:16px;color:#dc2626;">⚠️</div>
+            <h2 style="font-size:24px;font-weight:800;margin-bottom:12px;color:#111;">Server required</h2>
+            <p style="color:#4b5563;line-height:1.75;margin-bottom:24px;">This app must be opened through a local web server, not by clicking the file directly.</p>
+            <p style="color:#111;font-weight:600;margin-bottom:24px;">Try this URL: <code style="background:#f3f4f6;padding:6px 10px;border-radius:8px;">http://localhost/lifelink/</code></p>
+            <button onclick="window.location.href='http://localhost/lifelink/'" style="background:#dc2626;color:#fff;border:none;padding:14px 24px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;">Open via localhost</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+
 // API Client 
 const api = {
     async request(endpoint, options = {}) {
@@ -253,6 +270,7 @@ async function loadNotifCount(user) {
 // ---- Page Init ----
 async function initPage(requiredRoles = [], publicPage = false) {
     if (isFileProtocol()) {
+        showServerWarning();
         toast(serverRequiredMessage(), 'error', 8000);
         return null;
     }
