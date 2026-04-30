@@ -126,10 +126,24 @@ function updateDonorProfile(int $id): void {
     $dpUpdates = [];
     $dpParams = [];
     foreach ($dpFields as $f) {
-        if (isset($data[$f])) {
-            $dpUpdates[] = "$f = ?";
-            $dpParams[] = in_array($f, ['medical_conditions']) ? $data[$f] : sanitize($data[$f]);
+        if (!array_key_exists($f, $data)) {
+            continue;
         }
+        $value = $data[$f];
+
+        if ($value === '') {
+            if ($f === 'blood_type') {
+                // Default to unknown if the donor clears their selection
+                $value = 'unknown';
+            } else {
+                $value = null;
+            }
+        } else {
+            $value = in_array($f, ['medical_conditions']) ? sanitize((string)$value) : sanitize((string)$value);
+        }
+
+        $dpUpdates[] = "$f = ?";
+        $dpParams[] = $value;
     }
     if ($dpUpdates) {
         $dpParams[] = $id;
