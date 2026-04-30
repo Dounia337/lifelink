@@ -262,45 +262,62 @@ function respondToMatchByRequest(): void {
     if (!$requestId) jsonResponse(false, 'request_id is required', [], 422);
 
     // Find this donor's pending match for the given request
-    $stmt = $db->prepare("
-        SELECT * FROM donor_matches
-        WHERE request_id = ? AND donor_id = ? AND status = 'notified'
-    ");
+    $stmt = $db->prepare("SELECT * FROM donor_matches WHERE request_id = ? AND donor_id = ? AND status = 'notified'");
     $stmt->execute([$requestId, $session['user_id']]);
     $match = $stmt->fetch();
 
-    if (!$match) jsonResponse(false, 'No pending match found for this request', [], 404);
+    if (!$match) {
+        // If a donor clicks donate on an open/matched request without an existing notified match,
+        // create an accepted donor_match and notify the hospital and donor.
+        $requestStmt = $db->prepare("SELECT br.id, br.blood_type, br.patient_name, br.status, h.user_id as hospital_user_id, h.hospital_name FROM blood_requests br JOIN hospitals h ON h.id = br.hospital_id WHERE br.id = ?");
+        $requestStmt->execute([$requestId]);
+        $requestData = $requestStmt->fetch();
+
+        if (!$requestData || !in_array($requestData['status'], ['open', 'matched'])) {
+            jsonResponse(false, 'No pending match found for this request', [], 404);
+        }
+
+        $db->prepare("INSERT INTO donor_matches (request_id, donor_id, distance_km, match_score, status, notified_at, responded_at) VALUES (?, ?, 0, 0, 'accepted', NOW(), NOW())")
+           ->execute([$requestId, $session['user_id']]);
+
+        $db->prepare("UPDATE blood_requests SET status = 'in_progress' WHERE id = ? AND status NOT IN ('fulfilled','cancelled')")
+           ->execute([$requestId]);
+
+        $db->prepare("INSERT INTO notifications (user_id, type, title, message, related_request_id) VALUES (?, 'match_found', 'Donor Committed ✓', ?, ?)")
+           ->execute([
+               $requestData['hospital_user_id'],
+               "A donor has committed to donate {$requestData['blood_type']} for {$requestData['patient_name']}.",
+               $requestId,
+           ]);
+
+        $db->prepare("INSERT INTO notifications (user_id, type, title, message, related_request_id) VALUES (?, 'match_found', 'Donation Confirmed ✓', ?, ?)")
+           ->execute([
+               $session['user_id'],
+               "Your commitment to donate {$requestData['blood_type']} for {$requestData['patient_name']} has been sent to {$requestData['hospital_name']}.",
+               $requestId,
+           ]);
+
+        jsonResponse(true, 'Response recorded');
+    }
 
     $db->prepare("UPDATE donor_matches SET status = ?, responded_at = NOW() WHERE id = ?")
        ->execute([$data['response'], $match['id']]);
 
     if ($data['response'] === 'accepted') {
-        // Update request status
         $db->prepare("UPDATE blood_requests SET status = 'in_progress' WHERE id = ? AND status NOT IN ('fulfilled','cancelled')")
            ->execute([$requestId]);
 
-        // Get request details and hospital info to notify them
-        $requestStmt = $db->prepare("
-            SELECT br.id, br.blood_type, br.patient_name, br.urgency,
-                   h.user_id as hospital_user_id, h.hospital_name,
-                   u.full_name as donor_name
-            FROM blood_requests br
-            JOIN hospitals h ON h.id = br.hospital_id
-            JOIN Users u ON u.id = ?
-            WHERE br.id = ?
-        ");
+        $requestStmt = $db->prepare("SELECT br.id, br.blood_type, br.patient_name, br.urgency, h.user_id as hospital_user_id, h.hospital_name, u.full_name as donor_name FROM blood_requests br JOIN hospitals h ON h.id = br.hospital_id JOIN Users u ON u.id = ? WHERE br.id = ?");
         $requestStmt->execute([$session['user_id'], $requestId]);
         $requestData = $requestStmt->fetch();
 
         if ($requestData) {
-            // Notify the hospital that a donor has accepted
             $db->prepare("INSERT INTO notifications (user_id, type, title, message, related_request_id) VALUES (?, 'match_found', 'Donor Committed ✓', ?, ?)")
                ->execute([
                    $requestData['hospital_user_id'],
                    "{$requestData['donor_name']} committed to donate {$requestData['blood_type']} for {$requestData['patient_name']}.",
                    $requestId,
                ]);
-            // Notify the donor that their commitment was recorded
             $db->prepare("INSERT INTO notifications (user_id, type, title, message, related_request_id) VALUES (?, 'match_found', 'Donation Confirmed ✓', ?, ?)")
                ->execute([
                    $session['user_id'],
