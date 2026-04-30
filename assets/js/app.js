@@ -3,9 +3,21 @@
 
 const API_BASE = './api';
 
+function isFileProtocol() {
+    return window.location.protocol === 'file:';
+}
+
+function serverRequiredMessage() {
+    return 'App must be served through a web server (e.g. http://localhost/lifelink), not opened directly from file://.';
+}
+
 // API Client 
 const api = {
     async request(endpoint, options = {}) {
+        if (isFileProtocol()) {
+            console.error('File protocol detected, PHP backend will not execute.');
+            return { success: false, message: serverRequiredMessage() };
+        }
         try {
             const res = await fetch(`${API_BASE}/${endpoint}`, {
                 credentials: 'include',
@@ -13,8 +25,13 @@ const api = {
                 ...options,
                 body: options.body ? JSON.stringify(options.body) : undefined,
             });
-            const data = await res.json();
-            return data;
+            const text = await res.text();
+            try {
+                return JSON.parse(text);
+            } catch (jsonErr) {
+                console.error('API response not JSON:', text);
+                return { success: false, message: text || `Server returned ${res.status} ${res.statusText}` };
+            }
         } catch (err) {
             console.error('API Error:', err);
             return { success: false, message: 'Network error. Please try again.' };
@@ -235,6 +252,10 @@ async function loadNotifCount(user) {
 
 // ---- Page Init ----
 async function initPage(requiredRoles = [], publicPage = false) {
+    if (isFileProtocol()) {
+        toast(serverRequiredMessage(), 'error', 8000);
+        return null;
+    }
     const user = await auth.me();
     if (!user && !publicPage) {
         window.location.href = 'login.html';
