@@ -250,8 +250,34 @@ function respondToMatchByRequest(): void {
        ->execute([$data['response'], $match['id']]);
 
     if ($data['response'] === 'accepted') {
+        // Update request status
         $db->prepare("UPDATE blood_requests SET status = 'in_progress' WHERE id = ? AND status NOT IN ('fulfilled','cancelled')")
            ->execute([$requestId]);
+
+        // Get request details and hospital info to notify them
+        $requestStmt = $db->prepare("
+            SELECT br.id, br.blood_type, br.patient_name, br.urgency, 
+                   h.user_id as hospital_user_id, h.hospital_name,
+                   u.full_name as donor_name
+            FROM blood_requests br
+            JOIN hospitals h ON h.id = br.hospital_id
+            JOIN Users u ON u.id = ?
+            WHERE br.id = ?
+        ");
+        $requestStmt->execute([$session['user_id'], $requestId]);
+        $requestData = $requestStmt->fetch();
+
+        if ($requestData) {
+            // Notify the hospital that a donor has accepted
+            $db->prepare("
+                INSERT INTO notifications (user_id, type, title, message, related_request_id)
+                VALUES (?, 'match_found', 'Donor Committed ✓', ?, ?)
+            ")->execute([
+                $requestData['hospital_user_id'],
+                "{$requestData['donor_name']} committed to donate {$requestData['blood_type']} for {$requestData['patient_name']}.",
+                $requestId,
+            ]);
+        }
     }
 
     jsonResponse(true, 'Response recorded');

@@ -242,7 +242,71 @@ function updateRequest(int $id): void {
     $stmt = $db->prepare("UPDATE blood_requests SET " . implode(', ', $updates) . " WHERE id = ?");
     $stmt->execute($params);
 
+    // If status is being set to 'fulfilled', create donation records and notify donors
+    if (isset($data['status']) && $data['status'] === 'fulfilled') {
+        handleRequestFulfilled($id, $db);
+    }
+
     jsonResponse(true, 'Request updated');
+}
+
+function handleRequestFulfilled(int $requestId, PDO $db): void {
+    // Get the request details and accepted donors
+    $stmt = $db->prepare("
+        SELECT br.id, br.blood_type, br.units_needed, br.hospital_id, h.user_id as hospital_user_id,
+               dm.donor_id, dm.id as match_id,
+               u.full_name as donor_name
+        FROM blood_requests br
+        JOIN hospitals h ON h.id = br.hospital_id
+        LEFT JOIN donor_matches dm ON dm.request_id = br.id AND dm.status = 'accepted'
+        LEFT JOIN Users u ON u.id = dm.donor_id
+        WHERE br.id = ?
+    ");
+    $stmt->execute([$requestId]);
+    $data = $stmt->fetchAll();
+
+    if (empty($data)) return;
+
+    $request = $data[0];
+    $unitsPerDonor = $request['units_needed'] / max(1, count(array_filter(array_column($data, 'donor_id'))));
+
+    $donationDate = date('Y-m-d'); // Today's date
+
+    // Create donation records for all accepted donors
+    foreach ($data as $row) {
+        if (!$row['donor_id']) continue; // Skip if no donor
+
+        // Create donation record
+        $db->prepare("
+            INSERT INTO donation_records (donor_id, match_id, hospital_id, blood_type, units_donated, donation_date)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ")->execute([
+            $row['donor_id'],
+            $row['match_id'],
+            $row['hospital_id'],
+            $row['blood_type'],
+            $unitsPerDonor,
+            $donationDate,
+        ]);
+
+        // Update donor profile stats
+        $db->prepare("
+            UPDATE donor_profiles
+            SET total_donations = total_donations + 1,
+                last_donation_date = ?
+            WHERE user_id = ?
+        ")->execute([$donationDate, $row['donor_id']]);
+
+        // Notify donor that their donation has been recorded
+        $db->prepare("
+            INSERT INTO notifications (user_id, type, title, message, related_request_id)
+            VALUES (?, 'request_fulfilled', 'Donation Completed ✓', ?, ?)
+        ")->execute([
+            $row['donor_id'],
+            "Your donation of {$row['blood_type']} has been recorded. Thank you for saving lives!",
+            $requestId,
+        ]);
+    }
 }
 
 function updateMatchStatus(int $requestId): void {
