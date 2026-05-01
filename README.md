@@ -155,65 +155,7 @@ All API calls include session cookies (`credentials: 'include'`). The server val
 
 ## 5. Software Engineering Principles
 
-### 5.1 Separation of Concerns (SoC)
-
-The project cleanly separates three responsibility layers:
-
-- **Presentation** — HTML pages and Tailwind classes. No business logic.
-- **Shared frontend logic** — `app.js` handles the API client, auth, navbar injection, toast notifications, and data formatting. Each page imports this once; there is no duplication.
-- **Backend** — PHP files are split by domain: `auth.php` owns identity, `requests.php` owns blood requests, `donors.php` owns donor data, `admin.php` owns management operations.
-- **Data** — All SQL lives in PHP files; the HTML and JS layers never touch the database directly.
-
-### 5.2 DRY — Don't Repeat Yourself
-
-- `app.js` is the single source of truth for all shared frontend behaviour. The `api` object, `auth` module, `toast()`, `fmt.date()`, `fmt.statusBadge()`, and `renderNavbar()` are defined once and used by all 13 pages.
-- The Haversine distance formula is defined once in `config.php` and reused by the matching engine in `requests.php`.
-- CSS utility classes (`.card`, `.btn-primary`, `.blood-pill`, `.data-table`, `.stat-card`, `.sidebar-link`, etc.) are defined once in `styles.css` and composed across all pages.
-
-### 5.3 Single Responsibility Principle (SRP)
-
-Each PHP file has one domain:
-
-| File | Single responsibility |
-|---|---|
-| `auth.php` | User identity only — login, register, logout, session |
-| `requests.php` | Blood request lifecycle and the matching algorithm |
-| `donors.php` | Donor profile data and blood type verification |
-| `admin.php` | System-wide statistics, hospital approval, user toggling |
-| `Database.php` | One thing: providing the single PDO connection |
-| `UserFactory.php` | One thing: deciding which user creator to return |
-| `EventSystem.php` | One thing: dispatching events to registered observers |
-
-### 5.4 Role-Based Access Control (RBAC)
-
-Access is enforced on the server at every endpoint using two PHP functions defined in `config.php`:
-
-```php
-requireAuth()              // blocks unauthenticated requests (401)
-requireRole('admin', ...)  // blocks wrong-role requests (403)
-```
-
-The frontend mirrors this with `initPage(['donor'])` which checks the session role and redirects immediately if the user is in the wrong place. Both layers must agree — the frontend redirect is UX, the backend check is the real security.
-
-### 5.5 Input Validation at Boundaries
-
-Validation is applied at the API boundary (the only place external input arrives):
-
-- Required fields are checked before any SQL runs
-- Role values are validated against an allowed list
-- `sanitize()` strips HTML tags and special characters from every string before storage
-- All SQL uses PDO **prepared statements with bound parameters** — no string concatenation with user input, which eliminates SQL injection entirely
-
-### 5.6 Consistent Error Handling
-
-All API responses share the same envelope format:
-
-```json
-{ "success": true,  "message": "OK",    "data": { ... } }
-{ "success": false, "message": "Error", "data": {} }
-```
-
-`jsonResponse()` sets the HTTP status code, writes the JSON, and exits — no partial responses are ever sent.
+Four key software engineering principles were applied throughout the project. Separation of Concerns was enforced by dividing the system into distinct presentation, logic, and data layers. Modularity was applied by centralizing shared behavior in app.js on the frontend and config.php on the backend, ensuring that each component was cohesive and focused on a single, well-constrained function. Functional Independence was upheld by ensuring each PHP file owned exactly one domain of logic, with high cohesion and low coupling to other components. Information Hiding was implemented on the server at every endpoint, with frontend mirroring to redirect users who access pages outside their role, ensuring that internal data structures and processing details remained inaccessible to unauthorized modules.
 
 ---
 
