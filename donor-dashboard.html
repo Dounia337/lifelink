@@ -11,6 +11,7 @@
 </head>
 <body class="bg-[#f6f7f8] min-h-screen">
 <div id="app-navbar"></div>
+<button onclick="toggleMobileMenu()" class="md:hidden fixed top-16 left-4 z-50 bg-red-700 text-white p-2 rounded-lg">☰</button>
 
 <div class="flex max-w-[1400px] mx-auto">
   <!-- Sidebar -->
@@ -325,6 +326,10 @@ async function toggleAvailability() {
 async function respondToRequest(requestId) {
   toast('Thank you! The hospital has been notified of your willingness to donate.', 'success');
   // In a real system, this would create a match response
+}
+
+function toggleMobileMenu() {
+  document.querySelector('.sidebar').classList.toggle('hidden');
 }
 </script>
 </body>
