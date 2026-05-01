@@ -370,58 +370,6 @@ AB-     AB-, AB+
 AB+     AB+                                (universal recipient)
 ```
 
-#### Score examples
-
-| Donor | Blood Type | Verified | Distance | Score |
-|---|---|---|---|---|
-| Kwame Asante | O+ | Yes | 3.2 km | 20 + (100 - 3.2) = **116.8** |
-| Kofi Boateng | B+ | No | 12 km | 0 + (100 - 12) = **88** |
-| Efua Darko | AB+ | Yes | 95 km | 20 + max(0, 100-95) = **25** |
-| Unknown | O- | No | 200 km | 0 + max(0, 0) = **0** |
-
----
-
-### 7.2 Haversine Distance Formula
-
-**Location:** `api/config.php::haversineDistance()`
-
-**Purpose:** Compute the straight-line distance in kilometres between two points on Earth given their latitude and longitude coordinates.
-
-**Why Haversine and not simple Euclidean distance:** The Earth is a sphere. Euclidean distance on a flat plane would be accurate only over very short ranges. For distances across cities in Ghana (e.g., Accra to Kumasi ≈ 250 km), the spherical correction is significant.
-
-#### Formula
-
-```
-Δlat = lat₂ - lat₁  (in radians)
-Δlon = lon₂ - lon₁  (in radians)
-
-a = sin²(Δlat/2) + cos(lat₁) · cos(lat₂) · sin²(Δlon/2)
-
-c = 2 · atan2(√a, √(1-a))
-
-distance = R · c         where R = 6371 km (Earth's mean radius)
-```
-
-#### PHP implementation
-
-```php
-function haversineDistance(float $lat1, float $lon1,
-                           float $lat2, float $lon2): float {
-    $R    = 6371;
-    $dLat = deg2rad($lat2 - $lat1);
-    $dLon = deg2rad($lon2 - $lon1);
-    $a    = sin($dLat/2) * sin($dLat/2)
-          + cos(deg2rad($lat1)) * cos(deg2rad($lat2))
-          * sin($dLon/2) * sin($dLon/2);
-    $c    = 2 * atan2(sqrt($a), sqrt(1 - $a));
-    return round($R * $c, 2);
-}
-```
-
-**Input:** Two pairs of decimal degree coordinates (latitude, longitude)
-**Output:** Distance in kilometres, rounded to 2 decimal places
-**Fallback:** If either party has no GPS coordinates stored, distance defaults to 999 km (pushes the donor to the bottom of the ranking but does not exclude them)
-
 ---
 
 ### 7.3 Fulfillment Rate Calculation
